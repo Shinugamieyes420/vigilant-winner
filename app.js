@@ -231,6 +231,7 @@ const els = {
   saveNote: document.getElementById('saveNote'),
   viewportTitle: document.getElementById('viewportTitle'),
   emulatorFrame: document.getElementById('emulatorFrame'),
+  gameArea: document.querySelector('.game-area'),
   emptyState: document.getElementById('emptyState'),
   game: document.getElementById('game'),
   resetGame: document.getElementById('resetGame'),
@@ -259,6 +260,20 @@ let gamepadBridgeStarted = false;
 const gamepadPressedKeys = new Map();
 const CONTROLLER_KEYBOARD_BRIDGE_ENABLED = true; // Conditional bridge: GB/GBA/SNES keyboard bridge; N64 analog fallback; PS1/PSP/GameCube stay native.
 
+
+function setEmulatorActive(isActive) {
+  document.body.classList.toggle('emulator-running', Boolean(isActive));
+  els.launcher?.classList.toggle('emulator-running', Boolean(isActive));
+  els.gameArea?.classList.toggle('is-running', Boolean(isActive));
+  els.gameArea?.classList.toggle('is-empty', !isActive);
+}
+
+function scrollGameIntoViewOnMobile() {
+  if (!window.matchMedia || !window.matchMedia('(max-width: 820px)').matches) return;
+  window.setTimeout(() => {
+    els.gameArea?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 180);
+}
 function renderConsoleCards() {
   els.consoleGrid.innerHTML = Object.values(systems).map((system) => `
     <article class="console-card" style="--theme:${system.theme}" tabindex="0" role="button" data-system="${system.id}" aria-label="Selecteer ${system.title}">
@@ -935,6 +950,7 @@ async function startGame() {
 
   teardownEmulator();
   els.emptyState.classList.add('hidden');
+  setEmulatorActive(true);
   els.viewportTitle.textContent = `${activeSystem.title} — ${activeRom.name}`;
   updateStatus('Emulator wordt geladen...');
 
@@ -982,6 +998,7 @@ async function startGame() {
   try {
     await loadEmulatorScript();
     focusEmulatorSoon();
+    scrollGameIntoViewOnMobile();
     showToast(['ps1', 'n64', 'psp', 'gamecube'].includes(activeSystem.id)
       ? `${activeSystem.title} gestart. Klik één keer in het scherm en druk een controllerknop. ${activeSystem.id === 'n64' ? 'Native 4-pad input + controller-fallback staan aan.' : `Native gamepad-input staat aan${['gamecube'].includes(activeSystem.id) ? ' met maximaal 4 controllerpoorten' : ''}.`}`
       : 'Game gestart. Klik één keer in het scherm.', 'ok');
@@ -1012,6 +1029,7 @@ function loadEmulatorScript() {
 }
 
 function teardownEmulator() {
+  setEmulatorActive(false);
   els.game.innerHTML = '';
   els.emptyState.classList.remove('hidden');
   const old = document.querySelector('script[data-emulatorjs]');
@@ -1584,8 +1602,18 @@ function bindEvents() {
   });
   els.fullscreenGame.addEventListener('click', () => {
     const target = els.emulatorFrame;
-    if (document.fullscreenElement) document.exitFullscreen();
-    else target.requestFullscreen?.();
+    const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+    if (fullscreenElement) {
+      const exitFullscreen = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+      exitFullscreen?.call(document);
+      return;
+    }
+    const requestFullscreen = target.requestFullscreen || target.webkitRequestFullscreen || target.msRequestFullscreen;
+    if (requestFullscreen) requestFullscreen.call(target);
+    else {
+      showToast('Fullscreen wordt niet ondersteund door deze mobiele browser. Ik zet het scherm wel groot in beeld.', 'info');
+      scrollGameIntoViewOnMobile();
+    }
   });
 
   window.addEventListener('gamepadconnected', scanControllers);
@@ -1595,6 +1623,7 @@ function bindEvents() {
 renderConsoleCards();
 bindEvents();
 renderControllerStatus();
+setEmulatorActive(false);
 setSpeed(1);
 ensurePs1ServiceWorkerReady().catch(() => { /* Alleen nodig voor PS1 multi-track; melding volgt bij laden. */ });
 // Conditional gamepad bridge keeps SNES/GB/GBA controllers working. N64 now uses native 4-pad input plus fallback keyboard events for browsers/cores that do not auto-bind pads. PS1/PSP/GameCube remain native to avoid hotkey conflicts.

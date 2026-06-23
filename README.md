@@ -40,3 +40,12 @@ PSP in browser blijft zwaarder en gevoeliger dan GB/GBA/SNES/N64/PS1. Gebruik bi
 - N64 controller-fix voor games zoals Ocarina of Time.
 - N64 behoudt native 4-controller input, maar heeft nu ook een veilige controller-to-keyboard fallback als de core/browser de pad niet automatisch bindt.
 - PS1/PSP/GameCube blijven native om hotkey-conflicten te voorkomen.
+
+
+## v17 mobile fix
+
+- Op mobiel is het lege emulator-preview scherm verborgen totdat je echt op **Start game** drukt.
+- Na **Start game** schakelt de app naar mobiele speelmodus: uploadpanelen, controllerpanelen en controls-panel verdwijnen tijdelijk uit beeld.
+- De emulator krijgt bijna het hele telefoonscherm en de app scrollt automatisch naar het speelveld.
+- Fullscreen heeft extra CSS/JS fallback gekregen voor mobiele browsers.
+- Consolekaarten zijn compacter gemaakt op mobiel, zodat de grote artwork/schermpjes niet de UI blijven vullen.

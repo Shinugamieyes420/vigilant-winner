@@ -437,3 +437,198 @@ input[type="range"] { width: 100%; accent-color: var(--theme, var(--accent)); }
   opacity: 0.45;
   cursor: default;
 }
+
+
+/* v17 mobile fix: geen losse emulator-preview/schermpjes meer door de mobiele UI.
+   Op telefoon zie je eerst alleen de console/ROM-keuze. Na Start game schakelt de app naar speelmodus. */
+.game-area.is-empty {
+  --mobile-game-hidden: 0;
+}
+
+.emulator-frame:fullscreen,
+.emulator-frame:-webkit-full-screen {
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #000 !important;
+}
+.emulator-frame:fullscreen #game,
+.emulator-frame:fullscreen #game > div,
+.emulator-frame:fullscreen #game iframe,
+.emulator-frame:fullscreen #game canvas,
+.emulator-frame:-webkit-full-screen #game,
+.emulator-frame:-webkit-full-screen #game > div,
+.emulator-frame:-webkit-full-screen #game iframe,
+.emulator-frame:-webkit-full-screen #game canvas {
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  max-height: 100dvh !important;
+}
+
+@media (max-width: 820px) {
+  html, body {
+    min-height: 100%;
+  }
+
+  .app-shell {
+    width: min(100% - 14px, 1480px);
+    padding: 14px 0 28px;
+  }
+
+  .hero {
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-size: clamp(2rem, 11vw, 3.2rem);
+    letter-spacing: -0.055em;
+  }
+  .hero-copy {
+    font-size: .94rem;
+    margin-bottom: 0;
+  }
+  .hero-status {
+    min-width: 0;
+    padding: 10px 12px;
+    font-size: .86rem;
+  }
+
+  .console-grid {
+    gap: 12px;
+  }
+  .console-card {
+    min-height: 138px;
+    border-radius: 20px;
+  }
+  .console-card img {
+    object-position: left center;
+    filter: brightness(.68) saturate(1.05);
+    opacity: .82;
+  }
+  .console-card::after {
+    background:
+      linear-gradient(90deg, rgba(3,3,16,.92) 0%, rgba(3,3,16,.72) 45%, rgba(3,3,16,.62) 100%);
+  }
+  .card-content {
+    min-height: 138px;
+    justify-content: center;
+    align-items: flex-start;
+    text-align: left;
+    padding: 15px;
+  }
+  .console-card h2 {
+    margin-bottom: 5px;
+    max-width: 78%;
+    font-size: clamp(1.18rem, 6vw, 1.8rem);
+  }
+  .console-card p:not(.eyebrow),
+  .console-card .pill-row {
+    display: none;
+  }
+  .card-cta {
+    margin-top: 4px;
+    font-size: .78rem;
+  }
+
+  .launcher {
+    padding: 10px;
+    border-radius: 20px;
+  }
+  .launcher-header {
+    margin: 14px 0;
+  }
+  .launcher-header h2 {
+    font-size: clamp(1.7rem, 9vw, 2.5rem);
+  }
+  .format-pills,
+  .pill-row {
+    justify-content: flex-start;
+  }
+  .panel {
+    border-radius: 18px;
+    padding: 14px;
+  }
+  .dropzone {
+    min-height: 132px;
+    border-radius: 18px;
+  }
+
+  /* Belangrijk: voor het starten geen groot leeg emulator-scherm onder de uploadknoppen. */
+  .game-area.is-empty {
+    display: none;
+  }
+
+  body.emulator-running .hero,
+  body.emulator-running .launcher-header,
+  body.emulator-running .side-panel,
+  body.emulator-running .controls-panel {
+    display: none !important;
+  }
+
+  body.emulator-running .app-shell {
+    width: 100%;
+    padding: 0;
+  }
+  body.emulator-running .launcher {
+    min-height: 100dvh;
+    border: 0;
+    border-radius: 0;
+    padding: 8px;
+    background: #050512;
+  }
+  body.emulator-running #backButton {
+    width: 100%;
+    margin-bottom: 8px;
+    border-radius: 14px;
+  }
+  body.emulator-running .launcher-layout {
+    display: block;
+  }
+  body.emulator-running .game-area {
+    display: block !important;
+  }
+  body.emulator-running .viewport-toolbar {
+    min-height: auto;
+    align-items: center;
+    flex-direction: row;
+    border-radius: 16px 16px 0 0;
+    padding: 8px;
+    font-size: .82rem;
+  }
+  body.emulator-running .toolbar-actions {
+    gap: 6px;
+  }
+  body.emulator-running .tiny-button {
+    padding: 8px 9px;
+    font-size: .74rem;
+  }
+  body.emulator-running .emulator-frame {
+    height: calc(100dvh - 94px);
+    min-height: calc(100dvh - 94px);
+    border-radius: 0 0 16px 16px;
+    background: #000;
+  }
+  body.emulator-running #game,
+  body.emulator-running #game > div,
+  body.emulator-running #game iframe,
+  body.emulator-running #game canvas {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    max-height: 100% !important;
+  }
+}
+
+@media (max-width: 420px) {
+  body.emulator-running .viewport-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  body.emulator-running .emulator-frame {
+    height: calc(100dvh - 128px);
+    min-height: calc(100dvh - 128px);
+  }
+}
