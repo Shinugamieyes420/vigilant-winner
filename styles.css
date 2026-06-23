@@ -632,3 +632,15 @@ input[type="range"] { width: 100%; accent-color: var(--theme, var(--accent)); }
     min-height: calc(100dvh - 128px);
   }
 }
+
+
+/* v18 mobile fix: verberg de storende EmulatorJS quick menubalk op telefoons.
+   De hub heeft al eigen reset/restart/fullscreen/save knoppen, dus deze extra balk is overbodig en blokkeert het beeld. */
+@media (max-width: 820px) {
+  .mobile-emulator-quickbar-hidden {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+}

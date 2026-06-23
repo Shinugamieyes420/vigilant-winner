@@ -257,9 +257,14 @@ let emulatorScriptLoaded = false;
 let jsZipPromise = null;
 let lastSaveBlob = null;
 let gamepadBridgeStarted = false;
+let mobileEmulatorUiObserver = null;
+let mobileMenuHideNoticeShown = false;
 const gamepadPressedKeys = new Map();
 const CONTROLLER_KEYBOARD_BRIDGE_ENABLED = true; // Conditional bridge: GB/GBA/SNES keyboard bridge; N64 analog fallback; PS1/PSP/GameCube stay native.
 
+function isMobileViewport() {
+  return Boolean(window.matchMedia && window.matchMedia('(max-width: 820px)').matches);
+}
 
 function setEmulatorActive(isActive) {
   document.body.classList.toggle('emulator-running', Boolean(isActive));
@@ -269,10 +274,102 @@ function setEmulatorActive(isActive) {
 }
 
 function scrollGameIntoViewOnMobile() {
-  if (!window.matchMedia || !window.matchMedia('(max-width: 820px)').matches) return;
+  if (!isMobileViewport()) return;
   window.setTimeout(() => {
     els.gameArea?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 180);
+}
+
+function resetMobileEmulatorUiFix() {
+  if (mobileEmulatorUiObserver) {
+    mobileEmulatorUiObserver.disconnect();
+    mobileEmulatorUiObserver = null;
+  }
+  mobileMenuHideNoticeShown = false;
+  document.querySelectorAll('.mobile-emulator-quickbar-hidden').forEach((node) => {
+    node.classList.remove('mobile-emulator-quickbar-hidden');
+    node.removeAttribute('aria-hidden');
+  });
+}
+
+function getQuickbarCandidateScore(element) {
+  const rect = element.getBoundingClientRect();
+  const clickable = element.querySelectorAll('button, [role="button"], svg').length;
+  const children = element.children?.length || 0;
+  let score = 0;
+  if (rect.width > window.innerWidth * 0.6) score += 5;
+  if (rect.width > window.innerWidth * 0.75) score += 3;
+  if (rect.top > window.innerHeight * 0.18 && rect.top < window.innerHeight * 0.62) score += 4;
+  if (rect.height > 40 && rect.height < 180) score += 2;
+  score += Math.min(clickable, 12);
+  score += Math.min(children, 12);
+  return score;
+}
+
+function hideMobileEmulatorQuickbar() {
+  if (!isMobileViewport() || !els.emulatorFrame) return;
+
+  const root = els.emulatorFrame;
+  const candidates = [...root.querySelectorAll('div, section, aside')].filter((element) => {
+    if (!(element instanceof HTMLElement)) return false;
+    if (element.classList.contains('mobile-emulator-quickbar-hidden')) return false;
+    const rect = element.getBoundingClientRect();
+    if (!rect.width || !rect.height) return false;
+    if (rect.width < Math.max(220, window.innerWidth * 0.55)) return false;
+    if (rect.height < 38 || rect.height > Math.max(180, window.innerHeight * 0.32)) return false;
+    if (rect.top < 0 || rect.top > window.innerHeight * 0.72) return false;
+
+    const style = window.getComputedStyle(element);
+    if (!['absolute', 'fixed'].includes(style.position)) return false;
+
+    const hasEnoughButtons = element.querySelectorAll('button, [role="button"], svg').length >= 8 || (element.children?.length || 0) >= 8;
+    if (!hasEnoughButtons) return false;
+
+    const background = style.backgroundColor || '';
+    const hasVisibleBg = background.includes('rgb') && !background.endsWith(', 0)') && background !== 'rgba(0, 0, 0, 0)' && background !== 'transparent';
+    const hasBlur = (style.backdropFilter && style.backdropFilter !== 'none') || (style.webkitBackdropFilter && style.webkitBackdropFilter !== 'none');
+
+    return hasVisibleBg || hasBlur;
+  });
+
+  if (!candidates.length) return;
+
+  const best = candidates.sort((a, b) => getQuickbarCandidateScore(b) - getQuickbarCandidateScore(a))[0];
+  if (!best) return;
+
+  best.classList.add('mobile-emulator-quickbar-hidden');
+  best.setAttribute('aria-hidden', 'true');
+
+  if (!mobileMenuHideNoticeShown) {
+    mobileMenuHideNoticeShown = true;
+    showToast('Storende mobiele emulator-menubalk verborgen.', 'ok');
+  }
+}
+
+function installMobileEmulatorUiFix() {
+  resetMobileEmulatorUiFix();
+  if (!isMobileViewport() || !els.emulatorFrame) return;
+
+  const schedulePass = (delay) => {
+    window.setTimeout(() => {
+      window.requestAnimationFrame(() => hideMobileEmulatorQuickbar());
+    }, delay);
+  };
+
+  mobileEmulatorUiObserver = new MutationObserver(() => {
+    window.requestAnimationFrame(() => hideMobileEmulatorQuickbar());
+  });
+  mobileEmulatorUiObserver.observe(els.emulatorFrame, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['style', 'class']
+  });
+
+  schedulePass(250);
+  schedulePass(700);
+  schedulePass(1400);
+  schedulePass(2200);
 }
 function renderConsoleCards() {
   els.consoleGrid.innerHTML = Object.values(systems).map((system) => `
@@ -997,6 +1094,7 @@ async function startGame() {
 
   try {
     await loadEmulatorScript();
+    installMobileEmulatorUiFix();
     focusEmulatorSoon();
     scrollGameIntoViewOnMobile();
     showToast(['ps1', 'n64', 'psp', 'gamecube'].includes(activeSystem.id)
@@ -1029,6 +1127,7 @@ function loadEmulatorScript() {
 }
 
 function teardownEmulator() {
+  resetMobileEmulatorUiFix();
   setEmulatorActive(false);
   els.game.innerHTML = '';
   els.emptyState.classList.remove('hidden');
@@ -1606,6 +1705,7 @@ function bindEvents() {
     if (fullscreenElement) {
       const exitFullscreen = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
       exitFullscreen?.call(document);
+      window.setTimeout(() => hideMobileEmulatorQuickbar(), 200);
       return;
     }
     const requestFullscreen = target.requestFullscreen || target.webkitRequestFullscreen || target.msRequestFullscreen;
@@ -1614,8 +1714,14 @@ function bindEvents() {
       showToast('Fullscreen wordt niet ondersteund door deze mobiele browser. Ik zet het scherm wel groot in beeld.', 'info');
       scrollGameIntoViewOnMobile();
     }
+    window.setTimeout(() => hideMobileEmulatorQuickbar(), 200);
   });
 
+  window.addEventListener('resize', () => {
+    if (document.body.classList.contains('emulator-running')) {
+      hideMobileEmulatorQuickbar();
+    }
+  });
   window.addEventListener('gamepadconnected', scanControllers);
   window.addEventListener('gamepaddisconnected', scanControllers);
 }
