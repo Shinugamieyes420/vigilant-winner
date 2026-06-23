@@ -1,0 +1,72 @@
+const PS1_CACHE = 'retro-emulator-hub-ps1-files-v2';
+const ps1VirtualFiles = new Map();
+
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    try {
+      if ('caches' in self) await caches.delete(PS1_CACHE);
+    } catch (_) {}
+    await clients.claim();
+  })());
+});
+
+self.addEventListener('message', (event) => {
+  const data = event.data || {};
+  const reply = event.ports && event.ports[0];
+
+  if (data.type !== 'REGISTER_PS1_FILES') return;
+
+  try {
+    const files = Array.isArray(data.files) ? data.files : [];
+    if (!data.sessionId || !files.length) throw new Error('Geen PS1-bestanden ontvangen.');
+
+    // Schoon oude sessies op zodat grote PS1 files niet onnodig in geheugen blijven.
+    for (const key of ps1VirtualFiles.keys()) {
+      if (key.includes('/__retro_ps1__/')) ps1VirtualFiles.delete(key);
+    }
+
+    for (const file of files) {
+      if (!file.path || !file.blob) continue;
+      ps1VirtualFiles.set(decodeURI(file.path), file.blob);
+      ps1VirtualFiles.set(file.path, file.blob);
+    }
+
+    reply?.postMessage({ ok: true, count: files.length });
+  } catch (error) {
+    reply?.postMessage({ ok: false, error: error.message || String(error) });
+  }
+});
+
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  if (!url.pathname.includes('/__retro_ps1__/')) return;
+
+  event.respondWith((async () => {
+    const decodedPath = decodeURI(url.pathname);
+    const blob = ps1VirtualFiles.get(decodedPath) || ps1VirtualFiles.get(url.pathname);
+    if (blob) {
+      return new Response(blob, {
+        headers: {
+          'Content-Type': blob.type || 'application/octet-stream',
+          'Cache-Control': 'no-store'
+        }
+      });
+    }
+
+    // Fallback voor oude v6/v7 cache-sessies, maar v8 gebruikt primair geheugen.
+    try {
+      const cache = await caches.open(PS1_CACHE);
+      const cached = await cache.match(event.request, { ignoreSearch: true });
+      if (cached) return cached;
+    } catch (_) {}
+
+    return new Response('Retro Emulator Hub: PS1 virtual file not found. Reload with Ctrl+F5 and select the .cue + all .bin tracks again.', {
+      status: 404,
+      headers: { 'Content-Type': 'text/plain' }
+    });
+  })());
+});

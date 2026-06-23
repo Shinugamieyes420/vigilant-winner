@@ -1,127 +1,115 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="nl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Burgemeester van Enkhuizen (1550)</title>
-    <!-- CSS-bestand voor de styling -->
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div id="game-container">
-        <!-- AVATAR KEUZE SCHERM -->
-        <!-- Dit scherm is initieel zichtbaar. Alle andere schermen zijn verborgen met de 'hidden' class. -->
-        <div id="avatar-selection" class="screen">
-            <h2>Kies uw Burgemeester Avatar</h2>
-            <div id="avatar-choices">
-                <div class="avatar-option" data-avatar="wilders.png">
-                    <img src="image/wilders.png" alt="Geert Wilders">
-                    <p>Geert Wilders</p>
-                </div>
-                <div class="avatar-option" data-avatar="rutte.png">
-                    <img src="image/rutte.png" alt="Mark Rutte">
-                    <p>Mark Rutte</p>
-                </div>
-                <div class="avatar-option" data-avatar="baudet.png">
-                    <img src="image/baudet.png" alt="Thierry Baudet">
-                    <p>Thierry Baudet</p>
-                </div>
-            </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Retro Emulator Hub voor Game Boy, Game Boy Advance, SNES, PlayStation 1, Nintendo 64, PSP en GameCube." />
+    <title>Retro Emulator Hub</title>
+    <link rel="preconnect" href="https://cdn.emulatorjs.org" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="stars" aria-hidden="true"></div>
+    <main class="app-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Browser Retro Launcher</p>
+          <h1>Retro Emulator Hub</h1>
+          <p class="hero-copy">Kies je console, laad je ROM en speel direct in een sfeervolle retro hub.</p>
+        </div>
+        <div class="hero-status" id="globalStatus">Klaar om een console te kiezen.</div>
+      </header>
+
+      <section class="console-grid" id="consoleGrid" aria-label="Console keuze"></section>
+
+      <section class="launcher hidden" id="launcher" aria-live="polite">
+        <button class="ghost-button" id="backButton" type="button">← Terug naar consoles</button>
+        <div class="launcher-header">
+          <div>
+            <p class="eyebrow" id="selectedFamily">Console geselecteerd</p>
+            <h2 id="selectedTitle">Game Boy</h2>
+            <p id="selectedDescription"></p>
+          </div>
+          <div class="format-pills" id="formatPills"></div>
         </div>
 
-        <!-- JAARVERSLAG SCHERM (initieel verborgen) -->
-        <div id="annual-report" class="screen hidden">
-            <h2>Jaarverslag <span id="report-year"></span></h2>
-            <div id="report-content">
-                <p id="report-text"></p>
-                <h3>Statistieken Veranderingen:</h3>
-                <ul id="report-stats-changes">
-                    <!-- Stat verandering items worden hier door JavaScript toegevoegd -->
-                </ul>
+        <div class="launcher-layout">
+          <aside class="side-panel">
+            <section class="panel">
+              <h3>ROM laden</h3>
+              <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="ROM uploaden">
+                <input id="romInput" type="file" hidden />
+                <input id="folderInput" type="file" hidden webkitdirectory directory multiple />
+                <div class="drop-icon">▣</div>
+                <strong>Klik of sleep je ROM hierheen</strong>
+                <span id="dropHint">Ondersteunde bestanden verschijnen hier.</span>
+                <span id="dropExtra" class="drop-extra"></span>
+              </div>
+              <div class="ps1-extra-actions hidden" id="ps1ExtraActions">
+                <button class="secondary-button" id="ps1FilePick" type="button">Kies .cue + .bin tracks</button>
+                <button class="secondary-button" id="ps1FolderPick" type="button">Kies PS1 map</button>
+              </div>
+              <div class="rom-meta" id="romMeta">Nog geen ROM geselecteerd.</div>
+              <button class="primary-button" id="startButton" type="button" disabled>Start game</button>
+            </section>
+
+            <section class="panel">
+              <h3>Controllers</h3>
+              <div id="controllerStatus" class="status-list"></div>
+              <button class="secondary-button" id="scanControllers" type="button">Controllers scannen</button>
+            </section>
+
+            <section class="panel">
+              <h3>Speed</h3>
+              <label class="range-label" for="speedRange"><span>Snelheid</span><strong id="speedValue">1x</strong></label>
+              <input id="speedRange" min="1" max="15" value="1" type="range" />
+              <div class="button-row">
+                <button class="secondary-button" id="applySpeed" type="button">Apply Speed</button>
+                <button class="secondary-button" id="resetSpeed" type="button">Reset 1x</button>
+              </div>
+            </section>
+
+            <section class="panel">
+              <h3>Save manager</h3>
+              <div class="button-row vertical">
+                <button class="secondary-button" id="saveNow" type="button">Save Browser Now</button>
+                <button class="secondary-button" id="loadSave" type="button">Load Browser Save</button>
+                <button class="secondary-button" id="exportSave" type="button">Export .sav</button>
+                <label class="file-button" for="saveImport">Import .sav</label>
+                <input id="saveImport" type="file" accept=".sav,.srm,.state" hidden />
+              </div>
+              <p class="small-note" id="saveNote">Saves worden per systeem en ROM-naam in IndexedDB opgeslagen.</p>
+            </section>
+          </aside>
+
+          <section class="game-area">
+            <div class="viewport-toolbar">
+              <span id="viewportTitle">Geen game gestart</span>
+              <div class="toolbar-actions">
+                <button class="tiny-button" id="resetGame" type="button">Reset</button>
+                <button class="tiny-button" id="restartGame" type="button">Herstart</button>
+                <button class="tiny-button" id="fullscreenGame" type="button">Fullscreen</button>
+              </div>
             </div>
-            <button id="continue-game-button" class="action-button">Volgend Jaar</button>
+            <div class="emulator-frame" id="emulatorFrame">
+              <div class="empty-state" id="emptyState">
+                <div class="pixel-orb"></div>
+                <h3>Selecteer een ROM</h3>
+                <p>Daarna wordt de emulator hier geladen.</p>
+              </div>
+              <div id="game"></div>
+            </div>
+          </section>
         </div>
 
-        <!-- BELASTING INSTELLING SCHERM (initieel verborgen) -->
-        <div id="taxation-panel" class="screen hidden">
-            <h2>Belasting Opeisen</h2>
-            <p id="tax-explanation">De stad heeft inkomsten nodig. Hoeveel belasting wilt u dit jaar van de burgers heffen?</p>
-            <div class="tax-input-group">
-                <label for="tax-percentage">Belastingpercentage:</label>
-                <!-- Slider voor belastingpercentage, min 0, max 20, start op 10 -->
-                <input type="range" id="tax-percentage" min="0" max="20" value="10">
-                <span id="tax-value">10%</span>
-            </div>
-            <!-- Voorbeeld van de verwachte impact, wordt dynamisch geüpdatet door JS -->
-            <p id="tax-impact-preview">Verwachte impact: +100 Gulden, -5 Reputatie.</p>
-            <div class="tax-buttons">
-                <button id="confirm-tax-button" class="action-button">Bevestig Belasting</button>
-                <button id="cancel-tax-button" class="action-button">Annuleer</button>
-            </div>
-        </div>
+        <section class="controls-panel panel">
+          <h3>Controls</h3>
+          <div class="controls-grid" id="controlsGrid"></div>
+        </section>
+      </section>
+    </main>
 
-        <!-- VERZOEKEN SCHERM (initieel verborgen) -->
-        <div id="requests-panel" class="screen hidden">
-            <h2>Openstaande Verzoeken</h2>
-            <p id="requests-intro-text">Hier ziet u de verzoeken van de burgers en gilden van Enkhuizen.</p>
-            <div id="request-list">
-                <!-- Verzoeken worden hier dynamisch door JavaScript toegevoegd -->
-                <p id="no-requests-message">Geen openstaande verzoeken op dit moment.</p>
-            </div>
-            <button id="requests-back-button" class="action-button">Terug naar Stadhuis</button>
-        </div>
-
-
-        <!-- HOOFD SPEL SCHERM (initieel verborgen) -->
-        <div id="main-game-screen" class="screen hidden">
-            <!-- TOP PANEEL: Jaar, Avatar en Stats -->
-            <div id="top-panel">
-                <div id="year-and-avatar">
-                    <!-- Avatar afbeelding, initieel verborgen tot gekozen -->
-                    <img id="mayor-avatar" src="" alt="Burgemeester Avatar" class="hidden">
-                    <p>Jaar: <span id="current-year">1550</span></p>
-                </div>
-                <div id="stats-panel">
-                    <!-- Overzicht van de belangrijkste statistieken -->
-                    <p>Geld: <span id="money">500</span> Gulden</p>
-                    <p>Reputatie: <span id="reputation">60</span>%</p>
-                    <p>Geloof: <span id="faith">50</span>%</p>
-                    <p>Inwoners: <span id="population">10000</span></p>
-                    <p>Handelsvloot: <span id="trade-fleet">0</span> Schepen</p>
-                    <!-- Voeg hier eventueel meer statistieken toe als je die later wilt -->
-                </div>
-            </div>
-
-            <!-- HOOFD SPEL GEBIED: Tekst en Keuzeknoppen -->
-            <div id="main-game-area">
-                <!-- De hoofdtekst die gebeurtenissen en dialogen weergeeft -->
-                <p id="main-text-display">Welkom, nieuwe Burgemeester van Enkhuizen! Het is het jaar 1550. Uw eerste taak wacht in het Stadhuis.</p>
-                <div id="choices-container">
-                    <!-- Dit is de startknop. Meer keuzeknoppen worden hier dynamisch door JavaScript toegevoegd. -->
-                    <button class="choice-button" data-action="start_game">Begin uw ambtsperiode</button>
-                </div>
-            </div>
-
-            <!-- ALTIJD ZICHTBARE KNOP OM NAAR DE KAART TE GAAN (initieel verborgen) -->
-            <button id="go-to-map-button" class="action-button hidden">Ga naar de Kaart</button>
-        </div>
-
-        <!-- KAART / LOCATIE MENU (initieel verborgen) -->
-        <div id="map-menu" class="screen hidden">
-            <h3>Waar wilt u heen?</h3>
-            <!-- Knoppen voor de verschillende locaties in en buiten Enkhuizen -->
-            <button class="map-button" data-location="Stadhuis">Stadhuis</button>
-            <button class="map-button" data-location="Dromedaris">De Dromedaris</button>
-            <button class="map-button" data-location="Kerk">De Westerkerk</button>
-            <button class="map-button" data-location="Visafslag">De Visafslag</button>
-            <button class="map-button" data-location="Havenkade">De Havenkade</button>
-            <button class="map-button" data-location="Marktplein">Het Marktplein</button>
-            <button class="map-button" data-location="Urk">Naar Urk reizen</button>
-            <!-- Voeg hier meer locaties toe zoals de speler vordert -->
-        </div>
-    </div>
-
-    <!-- JavaScript-bestand voor de gamelogica. Deze moet aan het einde van de body voor optimale performance. -->
-    <script src="script.js"></script>
-</body>
+    <div class="toast-wrap" id="toastWrap" aria-live="assertive"></div>
+    <script src="app.js"></script>
+  </body>
 </html>
