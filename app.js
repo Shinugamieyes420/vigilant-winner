@@ -289,6 +289,7 @@ function resetMobileEmulatorUiFix() {
   document.querySelectorAll('.mobile-emulator-quickbar-hidden').forEach((node) => {
     node.classList.remove('mobile-emulator-quickbar-hidden');
     node.removeAttribute('aria-hidden');
+    node.style.pointerEvents = '';
   });
 }
 
@@ -307,29 +308,36 @@ function getQuickbarCandidateScore(element) {
 }
 
 function hideMobileEmulatorQuickbar() {
-  if (!isMobileViewport() || !els.emulatorFrame) return;
+  if (!isMobileViewport()) return;
 
-  const root = els.emulatorFrame;
-  const candidates = [...root.querySelectorAll('div, section, aside')].filter((element) => {
+  const root = document.body;
+  const candidates = [...root.querySelectorAll('div, section, aside, nav, menu')].filter((element) => {
     if (!(element instanceof HTMLElement)) return false;
     if (element.classList.contains('mobile-emulator-quickbar-hidden')) return false;
+    if (element === els.emulatorFrame || element === els.game || element.closest('.viewport-toolbar')) return false;
+
     const rect = element.getBoundingClientRect();
     if (!rect.width || !rect.height) return false;
-    if (rect.width < Math.max(220, window.innerWidth * 0.55)) return false;
-    if (rect.height < 38 || rect.height > Math.max(180, window.innerHeight * 0.32)) return false;
-    if (rect.top < 0 || rect.top > window.innerHeight * 0.72) return false;
+    if (rect.width < Math.max(220, window.innerWidth * 0.45)) return false;
+    if (rect.height < 36 || rect.height > Math.max(190, window.innerHeight * 0.35)) return false;
+    if (rect.top < 0 || rect.top > window.innerHeight * 0.78) return false;
+    if (rect.left > window.innerWidth * 0.15) return false;
+    if (rect.right < window.innerWidth * 0.85) return false;
 
     const style = window.getComputedStyle(element);
-    if (!['absolute', 'fixed'].includes(style.position)) return false;
+    if (!['absolute', 'fixed', 'sticky'].includes(style.position)) return false;
+    if (Number(style.zIndex || 0) < 1 && style.position !== 'fixed') return false;
 
-    const hasEnoughButtons = element.querySelectorAll('button, [role="button"], svg').length >= 8 || (element.children?.length || 0) >= 8;
+    const clickableCount = element.querySelectorAll('button, [role="button"], svg').length;
+    const hasEnoughButtons = clickableCount >= 8 || (element.children?.length || 0) >= 8;
     if (!hasEnoughButtons) return false;
 
     const background = style.backgroundColor || '';
     const hasVisibleBg = background.includes('rgb') && !background.endsWith(', 0)') && background !== 'rgba(0, 0, 0, 0)' && background !== 'transparent';
     const hasBlur = (style.backdropFilter && style.backdropFilter !== 'none') || (style.webkitBackdropFilter && style.webkitBackdropFilter !== 'none');
+    const hasRoundedShape = parseFloat(style.borderRadius || '0') >= 12;
 
-    return hasVisibleBg || hasBlur;
+    return hasVisibleBg || hasBlur || hasRoundedShape;
   });
 
   if (!candidates.length) return;
@@ -339,6 +347,7 @@ function hideMobileEmulatorQuickbar() {
 
   best.classList.add('mobile-emulator-quickbar-hidden');
   best.setAttribute('aria-hidden', 'true');
+  best.style.pointerEvents = 'none';
 
   if (!mobileMenuHideNoticeShown) {
     mobileMenuHideNoticeShown = true;
@@ -348,7 +357,7 @@ function hideMobileEmulatorQuickbar() {
 
 function installMobileEmulatorUiFix() {
   resetMobileEmulatorUiFix();
-  if (!isMobileViewport() || !els.emulatorFrame) return;
+  if (!isMobileViewport()) return;
 
   const schedulePass = (delay) => {
     window.setTimeout(() => {
@@ -359,17 +368,19 @@ function installMobileEmulatorUiFix() {
   mobileEmulatorUiObserver = new MutationObserver(() => {
     window.requestAnimationFrame(() => hideMobileEmulatorQuickbar());
   });
-  mobileEmulatorUiObserver.observe(els.emulatorFrame, {
+  mobileEmulatorUiObserver.observe(document.body, {
     childList: true,
     subtree: true,
     attributes: true,
     attributeFilter: ['style', 'class']
   });
 
-  schedulePass(250);
-  schedulePass(700);
-  schedulePass(1400);
-  schedulePass(2200);
+  schedulePass(150);
+  schedulePass(450);
+  schedulePass(900);
+  schedulePass(1600);
+  schedulePass(2600);
+  schedulePass(3600);
 }
 function renderConsoleCards() {
   els.consoleGrid.innerHTML = Object.values(systems).map((system) => `
