@@ -177,7 +177,24 @@ function applyStats(o){for(const k in o){if(k==='Fitness'){state.fitness=clamp((
 function bodyBar(v){return `<div class="miniBar"><div class="miniFill ${v<35?'low':''}" style="width:${clamp(v)}%"></div></div>`}
 function resultMetaFromAction(title,text,stats,cash,type){let keys=Object.keys(stats||{});let map={Happiness:'Happiness',Health:'Health',Smarts:'Smarts',Looks:'Looks',Fitness:'Fitheid',Stamina:'Stamina'};let k=keys[0]||'';let label='Resultaat';let value=72;let tone='';if(k){label=map[k]||k;value=k==='Fitness'?clamp(state.fitness||50):k==='Stamina'?clamp(state.stamina||50):clamp(state.stats[k]||50);tone=(stats[k]||0)<0?'low':'';if(value<20)tone='dead';else if(value<40&&tone!=='dead')tone='low';}else if(cash){label=cash>0?'Winst':'Kosten';let pct=Math.min(100,Math.max(10,Math.round(Math.abs(cash)/25)));value=pct;tone=cash<0?'low':'';}else if(type==='good'){label='Effect';value=82;}else if(type==='bad'){label='Effect';value=24;tone='low';}else if(type==='warn'){label='Effect';value=38;tone='low';}let titles={Happiness:['Nice!','Lekker bezig','Mooi zo'],Health:['Gezond bezig','Frisse boost','Sterker'],Smarts:['Slim gespeeld','Brain gain','Kennis erbij'],Looks:['Looking good','Netjes','Stijl omhoog'],Fitness:['Goed getraind','Fit bezig','Sterker lichaam'],Stamina:['Meer energie','Op adem komen','Conditie'],Resultaat:['Resultaat','Klaar','Afgerond']};let modalTitle=(titles[label]&&pick(titles[label]))||pick(titles.Resultaat); if(/flirt|date|ask out|liefde|crush/i.test(title+' '+text)) modalTitle=pick(['Any bites?','Vlinders','Spanning']); if(/conversation|gesprek|praat|talk/i.test(title+' '+text)) modalTitle=pick(['Class mates','Gesprek','Even bijpraten']); if(/huisdier|pet|dog|cat|walk|treat|bath|vet/i.test(title+' '+text)) modalTitle=pick(['Here you go','Trouwe vriend','Pootjes vooruit']); if(/meditat|mind|body|relax/i.test(title+' '+text)) modalTitle=pick(['Omm Omm','Rust gevonden','Zen moment']); return {title:modalTitle,text:text+(cash?` ${cash>0?'Je verdiende':'Het kostte'} ${money(Math.abs(cash))}.`:''),label,value,tone};}
 function showActionResult(meta){showModal(`<div class="resultWrap"><div class="resultShell"><div class="resultHead"><div class="resultLogo"><span class="sperm">◠◡◠</span><span>BitLife</span></div></div><div class="resultBody"><div class="resultTitle">${meta.title}</div><div class="resultText">${meta.text}</div><div class="meterBlock"><div class="meterLabel">${meta.label}</div><div class="resultBar"><div class="resultFill ${meta.tone||''}" style="width:${clamp(meta.value)}%"></div></div></div><div class="resultOk"><button class="btn" onclick="closeModal()">OK</button></div></div></div></div>`);}
-function action(title,text,stats={},cash=0,type=''){state.money+=cash;applyStats(stats);addLog(`<b>${title}</b><br>${text}${cash?`<br>${cash>0?'+':'-'} ${money(Math.abs(cash))}`:''}`,type||cash>0?'good':cash<0?'bad':'');render();showActionResult(resultMetaFromAction(title,text,stats,cash,type));}
+function action(title,text,stats={},cash=0,type=''){
+  // v17.1 minor finance guard: minderjarigen mogen door acties nooit negatief geld of schuld krijgen.
+  if(state && state.age < 18 && cash < 0){
+    const affordable = Math.max(0, Math.min(state.money || 0, Math.abs(cash)));
+    if(affordable < Math.abs(cash)){
+      text += '<br><br><span class="mini">Minderjarigen kunnen hierdoor geen schuld maken; de kosten zijn begrensd op wat ik echt had.</span>';
+    }
+    cash = -affordable;
+  }
+  state.money+=cash;
+  if(state && state.age < 18){
+    if(state.money < 0) state.money = 0;
+    if((state.debts||0) > 0) state.debts = 0;
+    if(state.lifestyle && Array.isArray(state.lifestyle.loans) && state.lifestyle.loans.length) state.lifestyle.loans = [];
+  }
+  applyStats(stats);
+  addLog(`<b>${title}</b><br>${text}${cash?`<br>${cash>0?'+':'-'} ${money(Math.abs(cash))}`:''}`,type||cash>0?'good':cash<0?'bad':'');render();showActionResult(resultMetaFromAction(title,text,stats,cash,type));
+}
 function ensureAddiction(){state.addiction=state.addiction||{alcoholUse:0,drugUse:0,weedUse:0,alcohol:false,drugs:false,weed:false,underInfluence:false,lastDuiAge:-99,lastStealAge:-99};state.addiction.weedUse=state.addiction.weedUse||0;state.addiction.weed=!!state.addiction.weed;return state.addiction;}function substanceChance(counter,kind){let base=Math.min(kind==='weed'?0.28:kind==='drugs'?0.38:0.30,counter*(kind==='weed'?0.035:kind==='drugs'?0.045:0.04));let cap=state.homeless?0.50:0.20;return Math.min(cap,base);}function recordSubstance(kind,amount=1){let a=ensureAddiction();a.underInfluence=true;if(kind==='alcohol'){a.alcoholUse=(a.alcoholUse||0)+amount;let chance=substanceChance(a.alcoholUse,'alcohol');if(!a.alcohol&&a.alcoholUse>=5&&Math.random()<chance){a.alcohol=true;addLog('<b>Verslaving</b><br>Mijn alcoholgebruik werd geen losse avond meer. Ik begin afhankelijk te worden van drank.','warn',false);showActionResult(resultMetaFromAction('Verslaving','Door vaak te drinken ontwikkelde ik een alcoholverslaving.',{Health:-8,Happiness:-6},0,'bad'));}}if(kind==='drugs'){a.drugUse=(a.drugUse||0)+amount;let chance=substanceChance(a.drugUse,'drugs');if(!a.drugs&&a.drugUse>=4&&Math.random()<chance){a.drugs=true;addLog('<b>Verslaving</b><br>Door vaak drugs te gebruiken begon het mijn keuzes over te nemen.','bad',false);showActionResult(resultMetaFromAction('Verslaving','Door vaak drugs te gebruiken ontwikkelde ik een drugsverslaving.',{Health:-10,Smarts:-6,Happiness:-7},0,'bad'));}}if(kind==='weed'){a.weedUse=(a.weedUse||0)+amount;let chance=substanceChance(a.weedUse,'weed');if(!a.weed&&a.weedUse>=5&&Math.random()<chance){a.weed=true;addLog('<b>Verslaving</b><br>Joints en wiet werden te normaal. Ik merk dat ik er afhankelijk van raak.','warn',false);showActionResult(resultMetaFromAction('Wietverslaving','Door vaak joints/wiet te gebruiken ontwikkelde ik een wietverslaving.',{Health:-5,Smarts:-4,Stamina:-5},0,'warn'));}}}function addictionYearEvents(){let a=ensureAddiction();if(state.dead||state.jail)return;a.underInfluence=false;if(a.alcoholUse>0)a.alcoholUse=Math.max(0,Math.round(a.alcoholUse*.82));if(a.drugUse>0)a.drugUse=Math.max(0,Math.round(a.drugUse*.78));if(a.weedUse>0)a.weedUse=Math.max(0,Math.round(a.weedUse*.84));if(a.alcohol&&Math.random()<.35){applyStats({Health:-3,Happiness:-2,Stamina:-5});addLog('<b>Verslaving</b><br>Mijn alcoholgebruik trok aan mijn gezondheid en energie dit jaar.','warn',false)}if(a.drugs&&Math.random()<.45){applyStats({Health:-5,Smarts:-3,Happiness:-3,Stamina:-6});addLog('<b>Verslaving</b><br>Mijn drugsgebruik maakte mijn jaar zwaarder. Focus, geld en gezondheid kregen een klap.','bad',false)}if(a.weed&&Math.random()<.35){applyStats({Health:-2,Smarts:-3,Happiness:-1,Stamina:-4});addLog('<b>Wietverslaving</b><br>Ik merkte dat joints/wiet mijn focus en energie steeds vaker omlaag trokken.','warn',false)}if(a.drugs&&state.money<80&&state.age-(a.lastStealAge??-99)>=3&&Math.random()<.28){a.lastStealAge=state.age;setTimeout(()=>drugStealEvent(),350);return}if((a.alcohol||a.drugs||a.alcoholUse>5||a.drugUse>4)&&state.license&&state.cars&&state.cars.length&&state.age-(a.lastDuiAge??-99)>=2&&Math.random()<.24){a.lastDuiAge=state.age;setTimeout(()=>duiEvent(),430)}}function drugStealEvent(){showModal(`<div class="modalTop"><div class="avatar">🚨</div><div class="modalTitle">Drang</div></div><div class="modalBody"><p>Ik had weinig geld en kreeg de neiging om iets te stelen voor drugs. Wat doe ik?</p><button class="btn red" onclick="resolveDrugSteal('steal')">Stelen</button><button class="btn" onclick="resolveDrugSteal('resist')">Weerstand bieden</button><button class="btn green" onclick="resolveDrugSteal('help')">Hulp zoeken</button></div>`)}function resolveDrugSteal(choice){closeModal();let a=ensureAddiction();if(choice==='steal'){let caught=Math.random()<.42;if(caught){action('Verslaving', 'Ik probeerde te stelen voor drugs, maar werd gepakt. Dit kan juridische gevolgen krijgen.', {Happiness:-12,Smarts:-2}, 0, 'bad');if(Math.random()<.45)lawyerChoice('stelen voor drugs',state.age<18?1:r(1,3));}else{let gain=r(20,120);action('Verslaving','Ik stal iets om aan geld te komen. Het lukte, maar het voelde als een nieuwe bodem.',{Happiness:-6,Smarts:-1},gain,'warn');}}if(choice==='resist'){a.drugUse=Math.max(0,(a.drugUse||0)-2);action('Verslaving','Ik wist de drang te weerstaan. Het was moeilijk, maar ik bleef uit de problemen.',{Happiness:2,Smarts:2,Health:1},0,'good')}if(choice==='help'){a.drugs=false;a.drugUse=Math.max(0,(a.drugUse||0)-4);action('Hulp zoeken','Ik vroeg hulp voor mijn drugsprobleem. Het was niet stoer, maar wel verstandig.',{Health:5,Smarts:2,Happiness:3},-Math.min(state.money,80),'good')}}function duiEvent(){showModal(`<div class="modalTop"><div class="avatar">🚗</div><div class="modalTitle">Rijden onder invloed</div></div><div class="modalBody"><p>Ik had een auto en rijbewijs, maar was niet helemaal nuchter. Wat doe ik?</p><button class="btn red" onclick="resolveDui('drive')">Toch rijden</button><button class="btn" onclick="resolveDui('taxi')">Taxi/OV pakken</button><button class="btn alt" onclick="resolveDui('sleep')">Wachten tot ik nuchter ben</button></div>`)}function resolveDui(choice){closeModal();if(choice==='taxi'){action('Rijden','Ik liet de auto staan en pakte ander vervoer. Slimme keuze.',{Smarts:2,Health:1,Happiness:1},-Math.min(state.money,45),'good');return}if(choice==='sleep'){action('Rijden','Ik besloot niet te rijden en wachtte tot ik weer helder was.',{Smarts:2,Health:1},0,'good');return}let roll=Math.random();if(roll<.25){state.license=false;action('Rijden onder invloed','Ik werd aangehouden. Mijn rijbewijs werd ingevorderd en ik kreeg een flinke boete.',{Happiness:-14,Smarts:-3,Health:-2},-Math.min(state.money,900),'bad')}else if(roll<.43){action('Rijden onder invloed','Ik veroorzaakte bijna een ongeluk. De schrik zat er goed in.',{Happiness:-10,Health:-8,Smarts:-2},-Math.min(state.money,500),'bad')}else if(roll<.58){action('Rijden onder invloed','Ik werd gepakt voor rijden onder invloed. Dit kan juridisch gedoe geven.',{Happiness:-12,Smarts:-2},-Math.min(state.money,650),'bad');if(Math.random()<.55)lawyerChoice('rijden onder invloed',state.age<18?1:r(1,2));}else{action('Rijden onder invloed','Ik reed onder invloed en kwam thuis zonder gepakt te worden. Dat was dom geluk, geen slimme keuze.',{Happiness:-2,Smarts:-2,Health:-2},0,'warn')}}
 function stage(){if(state.age<2)return 'Baby';if(state.age<4)return 'Peuter';if(state.age<12)return 'Kind';if(state.age<18)return 'Tiener';if(state.age<25)return 'Jongvolwassene';if(state.age<40)return 'Volwassene';if(state.age<65)return 'Middenleeftijd';if(state.age<80)return 'Senior';return 'Oudere';}
 function humanIcon(g,age=18){g=normalizeDateGender(g);if(age<2)return '👶';if(age<4)return '🧒';if(age<13)return g==='female'?'👧':'👦';if(age<18)return g==='female'?'👧':'👦';if(age<25)return g==='female'?'👩':'👨';if(age<65)return g==='female'?'👩':'👨';return g==='female'?'👵':'👴';}function avatar(){if(!state)return '👤';if(state.dead)return '☠️';return humanIcon(state.gender||'male',state.age||0);}function classmateAvatar(g){return humanIcon(g,(state&&state.age)||8)}function teacherAvatar(t){return /Mrs\.|Mevrouw|Juf/i.test((t&&t.name)||'')?'👩‍🏫':'👨‍🏫'}function petIcon(type){let t=(type||'').toLowerCase();if(t.includes('dog')||t.includes('corgi')||t.includes('beagle')||t.includes('spaniel')||t.includes('bulldog')||t.includes('retriever')||t.includes('chihuahua')||t.includes('dachshund')||t.includes('shepherd'))return '🐶';if(t.includes('cat')||t.includes('abyssinian')||t.includes('siamese')||t.includes('ragdoll')||t.includes('persian')||t.includes('maine'))return '🐱';if(t.includes('rabbit'))return '🐰';if(t.includes('gerbil')||t.includes('hamster'))return '🐹';if(t.includes('bird')||t.includes('macaw')||t.includes('parakeet'))return '🦜';if(t.includes('horse'))return '🐴';if(t.includes('snake'))return '🐍';return '🐾';}function itemIcon(name){let t=(name||'').toLowerCase();if(t.includes('gaming pc')||t==='pc'||t.includes('computer'))return '🖥️';if(t.includes('fitness'))return '🏋️';if(t.includes('kleding')||t.includes('clothes'))return '👕';if(t.includes('studieboeken')||t.includes('boeken')||t.includes('book'))return '📚';if(t.includes('ring'))return '💍';if(t.includes('broodmes')||t.includes('mes'))return '🔪';if(t.includes('optische scanner')||t.includes('optic scanner')||t.includes('scanner'))return '🔎';if(t.includes('cyberdeck'))return '💻';if(t.includes('datachip'))return '💾';return '🎁';}function petUpkeep(type){let t=(type||'').toLowerCase();if(t.includes('dog'))return 180;if(t.includes('cat'))return 130;if(t.includes('horse'))return 1800;if(t.includes('bird'))return 60;if(t.includes('rabbit'))return 55;if(t.includes('gerbil'))return 25;return 80;}function averageParentRel(){return Math.round(((state.mother?.rel||50)+(state.father?.rel||50))/2)}
@@ -323,7 +340,7 @@ function carAction(i,kind){ensureMega();let c=state.cars[i];if(!c)return;let txt
  closeModal();action(kind==='race'?'Racen':'Rondje rijden',txt,stats,cash,type);}
 function ageUp(){if(state.dead)return toast('Je bent overleden.');state.snapshots.push(compact());if(state.snapshots.length>3)state.snapshots.shift();state.age++;birthdayRemark();state.lastAgeIncome=0;if(state.jail&&state.jail.yearsLeft>0){state.jail.yearsLeft--;if(state.jail.yearsLeft<=0){addLog('<b>Vrijlating</b><br>Ik kwam vrij en mocht mijn leven weer oppakken.','good',false);state.jail=null;}}state.mother.age++;state.father.age++;state.children.forEach(c=>c.age++);(state.siblings||[]).forEach(b=>b.age++);state.pets.forEach(p=>p.age++);if(state.partner)state.partner.age=(state.partner.age||state.age)+1;yearlyEducation();yearlyIncome();yearlyAssets();yearlyBody();maybeSiblingAdultLife();randomYear();nightCityYear();if(state.age>=21&&!state.job&&state.world!=='nightcity'&&Math.random()<.28)maybeOfferNightCity('werkloosheid');addictionYearEvents();deathCheck();safeSave();render();maybeCandyChoiceAfterBirthday();maybeLifeMomentAfterBirthday();maybeFamilyEventAfterBirthday();megaYearlyEvents();}
 function yearlyIncome(){if(state.job){state.jobYears++;let pay=jobSalary();state.money+=pay;state.lastAgeIncome+=pay;applyStats({Happiness:r(-3,3),Smarts:1});addLog(`<b>Salaris</b><br>Ik werkte als ${state.job.title} en verdiende ${money(pay)} dit jaar.`,'good',false)}if(state.debts>0){let interest=Math.ceil(state.debts*.04);state.debts+=interest;let pay=Math.min(state.money,Math.ceil(state.debts*.06));state.money-=pay;applyStats({Happiness:-Math.min(6,Math.ceil(state.debts/120000))});addLog(`<b>Schulden</b><br>Rente en aflossing kostten ${money(pay)}. De schuld staat nu op ${money(state.debts)}.`, 'warn', false);}}
-function yearlyAssets(){let income=0,cost=0;state.houses.forEach(h=>{if(h.owned){h.value=Math.max(10000,Math.round((h.value||h.price||0)*(1+(r(-3,6)/100))));if(state.age>=18){cost+=h.upkeep||0;if(h.mortgage)cost+=(h.monthlyMortgage||0)*12;}if(h.rented&&state.age>=18)income+=h.rent||0;}else{if(state.age>=18)cost+=(h.monthlyRent||0)*12;}});state.cars.forEach(c=>{c.value=Math.max(250,Math.round(c.value*.88));if(state.age>=18)cost+=c.upkeep;if(c.rented&&state.age>=18)income+=c.rent;});let petCost=0;state.pets.forEach(p=>{petCost+=p.upkeep||petUpkeep(p.type||p.breed||'Pet');p.rel=clamp((p.rel||65)+r(-2,3));p.health=clamp((p.health||80)+r(-4,2));});if(state.age>=16)cost+=petCost;if(state.age>=18&&state.houses.length===0){let baseCost=state.world==='nightcity'?6000:7200;cost+=baseCost;addLog(state.world==='nightcity'?`<b>Night City wonen</b><br>Ik had geen vaste woning en betaalde ${money(baseCost)} voor capsulebedden, opslagkluizen en tijdelijke pods.`:`<b>Wonen</b><br>Ik had geen eigen huur- of koopwoning gekozen en betaalde dit jaar ${money(baseCost)} aan basis vaste lasten.`, 'warn', false)}else if(state.age<18){addLog(`<b>Wonen</b><br>Ik woon thuis bij mijn ouders en betaal geen huur of vaste lasten.`, 'good', false)}state.money+=income-cost;if(state.pets.length&&state.age<16)addLog(`<b>Huisdieren</b><br>Mijn ouders betaalden de verzorging van mijn huisdieren. Ik had zelf nog geen onderhoud of vaste lasten.`, 'good', false);if(state.pets.length&&state.age>=16)addLog(`<b>Huisdieren</b><br>Voer, verzorging en andere kosten voor mijn huisdieren kwamen uit op ${money(petCost)}.`, 'warn', false);if(income||cost)addLog(`<b>Bezittingen</b><br>Inkomsten brachten ${money(income)} op. Huur/hypotheek/onderhoud/vaste lasten kostten ${money(cost)}.`,income>=cost?'good':'bad',false)}
+function yearlyAssets(){let income=0,cost=0;state.houses.forEach(h=>{if(h.owned){h.value=Math.max(10000,Math.round((h.value||h.price||0)*(1+(r(-3,6)/100))));if(state.age>=18){cost+=h.upkeep||0;if(h.mortgage)cost+=(h.monthlyMortgage||0)*12;}if(h.rented&&state.age>=18)income+=h.rent||0;}else{if(state.age>=18)cost+=(h.monthlyRent||0)*12;}});state.cars.forEach(c=>{c.value=Math.max(250,Math.round(c.value*.88));if(state.age>=18)cost+=c.upkeep;if(c.rented&&state.age>=18)income+=c.rent;});let petCost=0;state.pets.forEach(p=>{petCost+=p.upkeep||petUpkeep(p.type||p.breed||'Pet');p.rel=clamp((p.rel||65)+r(-2,3));p.health=clamp((p.health||80)+r(-4,2));});if(state.age>=18)cost+=petCost;if(state.age>=18&&state.houses.length===0){let baseCost=state.world==='nightcity'?6000:7200;cost+=baseCost;addLog(state.world==='nightcity'?`<b>Night City wonen</b><br>Ik had geen vaste woning en betaalde ${money(baseCost)} voor capsulebedden, opslagkluizen en tijdelijke pods.`:`<b>Wonen</b><br>Ik had geen eigen huur- of koopwoning gekozen en betaalde dit jaar ${money(baseCost)} aan basis vaste lasten.`, 'warn', false)}else if(state.age<18){addLog(`<b>Wonen</b><br>Ik woon thuis bij mijn ouders en betaal geen huur of vaste lasten.`, 'good', false)}state.money+=income-cost;if(state.pets.length&&state.age<18)addLog(`<b>Huisdieren</b><br>Mijn ouders betaalden de verzorging van mijn huisdieren. Ik had zelf nog geen onderhoud of vaste lasten.`, 'good', false);if(state.pets.length&&state.age>=18)addLog(`<b>Huisdieren</b><br>Voer, verzorging en andere kosten voor mijn huisdieren kwamen uit op ${money(petCost)}.`, 'warn', false);if(income||cost)addLog(`<b>Bezittingen</b><br>Inkomsten brachten ${money(income)} op. Huur/hypotheek/onderhoud/vaste lasten kostten ${money(cost)}.`,income>=cost?'good':'bad',false)}
 function yearlyBody(){state.stamina=clamp((state.stamina||50)+r(4,9));if(state.age>=12&&!state.flags.workedOutThisYear){state.fitness=clamp((state.fitness||50)-r(1,3));if(Math.random()<.35)addLog('<b>Fitheid</b><br>Ik sportte dit jaar weinig. Mijn fitheid zakte een beetje, maar mijn stamina herstelde wel door rust.','warn',false)}state.flags.workedOutThisYear=false}
 function maybeCandyChoiceAfterBirthday(){if(state.dead)return;state.flags=state.flags||{};if(state.age<7||state.age>13)return;let last=state.flags.lastCandyChoiceAge??-99;let cooldown=(state.age-last)<5;if(cooldown)return;let must=state.age===7&&!state.flags.candyFirstSeen;let chance=Math.random()<0.07;if(must||chance){state.flags.lastCandyChoiceAge=state.age;state.flags.candyFirstSeen=true;safeSave();setTimeout(()=>candyChoiceEvent(),180);}}function candyChoiceEvent(){showModal(`<div class="modalTop"><div class="avatar">🍬</div><div class="modalTitle">Snoepje in de winkel</div></div><div class="modalBody"><p>Je ziet een lekker snoepje in de winkel liggen. Wat doe je?</p><button class="btn red" onclick="chooseCandyEvent('steal')">🕵️ Steel snoepje</button><button class="btn" onclick="chooseCandyEvent('ask')">🙋 Vraag pa of ma</button><button class="btn green" onclick="chooseCandyEvent('skip')">🏃 Skip het snoepje, het is slecht voor je</button></div>`)}
 function chooseCandyEvent(choice){state.talents=state.talents||{thief:0,honesty:0,sport:0};let txt='',stats={},type='good',label='Talent',value=50,tone='';if(choice==='steal'){state.talents.thief=(state.talents.thief||0)+1;txt='Ik stal het snoepje uit de winkel. Het voelde spannend en slim, maar niet helemaal goed.';stats={Happiness:3,Smarts:1};type='warn';label='Dief-talent';value=clamp(25+state.talents.thief*15);tone='low';if(Math.random()<.25){txt+=' Ik werd bijna betrapt en schrok me kapot.';stats.Happiness=-3;}}if(choice==='ask'){state.talents.honesty=(state.talents.honesty||0)+1;addRel(state.mother,1);addRel(state.father,1);txt='Ik vroeg netjes aan pa of ma of ik het snoepje mocht. Dat was eerlijk en volwassen.';stats={Happiness:2,Smarts:1};label='Eerlijkheid';value=clamp(35+state.talents.honesty*15);}if(choice==='skip'){state.talents.sport=(state.talents.sport||0)+1;txt='Ik liet het snoepje liggen omdat het slecht voor me is. Best verstandig eigenlijk.';stats={Health:3,Fitness:2,Happiness:-1};label='Sportief/verstandig';value=clamp(35+state.talents.sport*15);}closeModal();applyStats(stats);addLog(`<b>Snoepje</b><br>${txt}`,'good');render();showActionResult({title:'Keuze gemaakt',text:txt,label,value,tone});safeSave();}
@@ -6000,7 +6017,7 @@ loadGame();
     ['car_theft','🚗','Auto stelen',16,68,[800,6500],[1,6],26,'Ik probeerde een auto te stelen. De kans op zware gevolgen is groot.'],
     ['scam','💻','Online scam',16,46,[100,2200],[0,3],16,'Ik probeerde online mensen geld afhandig te maken. Digitale sporen maken het gevaarlijk.'],
     ['fake_id','🪪','Nep-ID gebruiken',16,36,[0,120],[0,1],8,'Ik gebruikte een nep-ID. Leuk tot iemand echt gaat controleren.'],
-    ['drug_deal','💊','Drugs dealen',16,64,[200,3500],[1,6],24,'Ik raakte betrokken bij drugsdealen. Het geld lonkte, maar de risico’s werden groter.'],
+    ['drug_deal','💊','Drugs dealen',18,64,[200,3500],[1,6],24,'Ik raakte betrokken bij drugsdealen. Het geld lonkte, maar de risico’s werden groter.'],
     ['street_fight','🥊','Straatgevecht',14,44,[0,100],[0,2],12,'Ik raakte betrokken bij een straatgevecht. Zelfs winnen kan verliezen zijn als politie komt.'],
     ['blackmail','✉️','Chantage',18,58,[300,4000],[1,5],22,'Ik probeerde iemand onder druk te zetten voor geld. Dit kan heel snel escaleren.'],
     ['fraud','📄','Fraude',18,60,[500,7000],[1,7],26,'Ik pleegde fraude. Op papier leek het rustig, maar de gevolgen kunnen keihard zijn.'],
@@ -11476,7 +11493,15 @@ loadGame();
  const ri=r=>({living:'🛋️',game:'🎮',bedroom:'🛏️',kitchen:'🍳',garden:'🌿',office:'💻'}[r]||'🏠');
  function ownH(h,r,id){return !!(h&&h.upgrades&&h.upgrades[r]&&h.upgrades[r].includes(id))}
  function own(id,scope='global'){return state.lifestyle.items.some(x=>x.id===id&&x.scope===scope)}
- function yearly(write=false){en();let t=0,lines=[];function add(n,c){if(c>0){t+=c;lines.push(n+': '+m(c))}}state.lifestyle.items.forEach(x=>{let a=it(x.id);if(a?.yearlyCost)add(a.name,a.yearlyCost)});state.houses.forEach(h=>Object.values(h.upgrades||{}).flat().forEach(id=>{let a=it(id);if(a?.yearlyCost)add((h.name||'huis')+' · '+a.name,a.yearlyCost)}));state.lifestyle.loans.forEach(l=>{let rente=Math.round((l.balance||0)*(l.interest||.08));if(write)l.balance+=rente;add(l.name+' rente',rente)});state.lifestyle.yearlyCosts=t;if(write&&t){state.money-=t;addLog('<b>Lifestyle jaarlijkse kosten</b><br>'+lines.join('<br>')+'<br><br>Totaal: '+m(t),'warn',false)}return t}
+ function yearly(write=false){en();let t=0,lines=[];function add(n,c){if(c>0){t+=c;lines.push(n+': '+m(c))}}state.lifestyle.items.forEach(x=>{let a=it(x.id);if(a?.yearlyCost)add(a.name,a.yearlyCost)});state.houses.forEach(h=>Object.values(h.upgrades||{}).flat().forEach(id=>{let a=it(id);if(a?.yearlyCost)add((h.name||'huis')+' · '+a.name,a.yearlyCost)}));state.lifestyle.loans.forEach(l=>{let rente=Math.round((l.balance||0)*(l.interest||.08));if(write)l.balance+=rente;add(l.name+' rente',rente)});state.lifestyle.yearlyCosts=t;if(write&&t){
+    if(state.age < 18){
+      state.lifestyle.yearlyCosts = 0;
+      addLog('<b>Minderjarig financieel vangnet</b><br>Lifestyle-kosten worden onder 18 niet als rekening of schuld afgeschreven. Ouders/verzorgers vangen dit op.', 'good', false);
+    }else{
+      state.money-=t;
+      addLog('<b>Lifestyle jaarlijkse kosten</b><br>'+lines.join('<br>')+'<br><br>Totaal: '+m(t),'warn',false);
+    }
+  }return t}
  function value(){en();let total=0;state.lifestyle.items.forEach(x=>{let a=it(x.id);if(a)total+=Math.round(a.price*.55)});state.houses.forEach(h=>Object.values(h.upgrades||{}).flat().forEach(id=>{let a=it(id);if(a)total+=Math.round(a.price*.55)}));state.lifestyle.investments.forEach(i=>total+=i.value||0);state.lifestyle.businesses.forEach(b=>total+=Math.max(0,b.value||0));return total}
  function status(){en();let inv=state.lifestyle.investments.reduce((s,i)=>s+(i.value||0),0),biz=state.lifestyle.businesses.reduce((s,b)=>s+(b.value||0),0),loans=state.lifestyle.loans.reduce((s,l)=>s+(l.balance||0),0);return `<div class="card"><b>Money & Lifestyle</b><br>Cash: ${m(state.money||0)}<br>Lifestyle waarde: ± ${m(value())}<br>Investeringen: ${m(inv)} · Businesswaarde: ${m(biz)}<br>Leningen: ${m(loans)}<br>Jaarlijkse lifestyle-kosten: ± ${m(yearly(false))}</div>`}
  window.moneyLifestyleHub165=function(){en();showModal(`<div class="modalTop"><div class="avatar">💰</div><div class="modalTitle">Geld & Lifestyle</div></div><div class="modalBody">${status()}<button class="btn" onclick="houseUpgradeHub165()">🏠 Huis & kamer-upgrades</button><button class="btn" onclick="shoppingHub165()">🛍️ Shopping</button><button class="btn" onclick="investmentHub165()">📈 Investeren</button><button class="btn" onclick="businessHub165()">🏪 Eigen business</button><button class="btn" onclick="loansHub165()">💳 Leningen & schulden</button><button class="btn" onclick="familySpendingHub165()">👨‍👩‍👧 Familie & relatie-uitgaven</button><button class="btn alt" onclick="closeModal()">Terug</button></div>`)};
@@ -11505,7 +11530,16 @@ loadGame();
  window.doRepayLoan165=function(i,a){let l=state.lifestyle.loans[i];if(state.money<a)return toast('Niet genoeg geld.');state.money-=a;l.balance-=a;if(l.balance<=0)state.lifestyle.loans.splice(i,1);closeModal();action('Aflossing',`Ik loste ${m(a)} af.`,{Happiness:2,Smarts:1},0,'good');safeSave();render()};
  function updateInvest(){if(!state.lifestyle.investments.length)return;let lines=[];state.lifestyle.investments.forEach(inv=>{let t=INV[inv.type],pct=r(t[2][0],t[2][1]);if(Math.random()<t[3])pct=inv.type==='scam'?-100:r(-60,-25);let old=inv.value;inv.value=Math.max(0,Math.round(inv.value*(1+pct/100)));lines.push(`${t[0]} ${inv.name}: ${pct>=0?'+':''}${pct}% (${m(old)} → ${m(inv.value)})`)});addLog('<b>Investeringen</b><br>'+lines.join('<br>'),'warn',false)}
  function updateBiz(){if(!state.lifestyle.businesses.length)return;let lines=[];state.lifestyle.businesses.forEach(b=>{let meta=BUS[b.type],profit=r(meta[4][0]*b.level,meta[4][1]*b.level)+b.reputation*80+b.staff*450;if(Math.random()<meta[3]/350)profit-=r(1000,12000);b.value=Math.max(0,Math.round((b.value||0)+profit*.35));b.reputation=clamp((b.reputation||40)+(profit>0?r(1,6):-r(2,8)));state.money+=profit;lines.push(`${meta[0]} ${b.name}: ${profit>=0?'winst':'verlies'} ${m(profit)} · reputatie ${b.reputation}%`)});addLog('<b>Business jaarresultaat</b><br>'+lines.join('<br>'),'warn',false)}
- const oldYear=window.yearlyAssets||(typeof yearlyAssets==='function'?yearlyAssets:null);window.yearlyAssets=function(){if(oldYear)oldYear();try{yearly(true);updateInvest();updateBiz();if(state.money<0){let d=Math.abs(state.money);state.debts=(state.debts||0)+d;state.money=0;addLog(`<b>Lifestyle tekort</b><br>${m(d)} als schuld erbij.`,'bad',false)}}catch(e){console.warn('[v16.5 lifestyle]',e)}};try{yearlyAssets=window.yearlyAssets}catch(e){}
+ const oldYear=window.yearlyAssets||(typeof yearlyAssets==='function'?yearlyAssets:null);window.yearlyAssets=function(){if(oldYear)oldYear();try{yearly(true);updateInvest();updateBiz();if(state.money<0){
+  if(state.age < 18){
+    state.money=0;
+    state.debts=0;
+    if(state.lifestyle&&Array.isArray(state.lifestyle.loans))state.lifestyle.loans=[];
+    addLog(`<b>Minderjarig financieel vangnet</b><br>Een tekort werd geblokkeerd: onder 18 kan dit geen schuld worden.`,'good',false);
+  }else{
+    let d=Math.abs(state.money);state.debts=(state.debts||0)+d;state.money=0;addLog(`<b>Lifestyle tekort</b><br>${m(d)} als schuld erbij.`,'bad',false);
+  }
+}}catch(e){console.warn('[v16.5 lifestyle]',e)}};try{yearlyAssets=window.yearlyAssets}catch(e){}
  const oldAct=window.activitiesHTML||(typeof activitiesHTML==='function'?activitiesHTML:null);window.activitiesHTML=function(){let h=oldAct?oldAct():'';if(!h.includes('Geld & Lifestyle'))h+=`<div class="section">Geld & Lifestyle</div>${row('💰','Geld & Lifestyle','Upgrades, shopping, investeren, business, leningen en familie-uitgaven','moneyLifestyleHub165()')}`;return h};try{activitiesHTML=window.activitiesHTML}catch(e){}
  const oldHouse=window.assetHouse;if(oldHouse){window.assetHouse=function(i){oldHouse(i);setTimeout(()=>{try{let body=document.querySelector('#modal .modalBody');if(body&&!document.getElementById('moneyLifestyleRoomBtn165')){let btn=document.createElement('button');btn.id='moneyLifestyleRoomBtn165';btn.className='btn gold';btn.innerHTML='💰 Kamer upgraden<br><span class="mini">open Geld & Lifestyle huis-upgrades</span>';btn.onclick=()=>houseUpgradeHub165();body.insertBefore(btn,[...body.querySelectorAll('button')].find(b=>/Terug/i.test(b.textContent||''))||null)}}catch(e){}},30)};try{assetHouse=window.assetHouse}catch(e){}}
  setTimeout(()=>{try{en();safeSave()}catch(e){}},300);
@@ -11656,7 +11690,11 @@ loadGame();
   function economySnapshot167(){const loans=(state.lifestyle?.loans||[]).reduce((s,l)=>s+(l.balance||0),0);const inv=(state.lifestyle?.investments||[]).reduce((s,i)=>s+(i.value||0),0);const biz=(state.lifestyle?.businesses||[]).reduce((s,b)=>s+(b.value||0),0);return {cash:state.money||0,netWorth:netWorth167(),income:state.lastAgeIncome||0,gross:state.lastAgeGrossIncome||0,expenses:state.lastAgeExpenses||0,passive:state.lastAgePassiveIncome||0,lifestyleCosts:state.lifestyle?.yearlyCosts||0,debts:(state.debts||0)+loans,investments:inv,businesses:biz}}
   function calculatePressure167(){ensureLife167();const eco=economySnapshot167();let stress=0,family=0,lifestyle=0;if(state.job){stress+=(state.work?.stress||state.job?.stress||20)*0.25;stress+=(state.work?.burnout||0)*0.35}if(eco.debts>0)stress+=Math.min(25,eco.debts/5000);if(eco.expenses+eco.lifestyleCosts>eco.income&&state.age>=18)stress+=8;if((state.lifestyle?.yearlyCosts||0)>3000)lifestyle+=8;if((state.cars||[]).length>1)lifestyle+=5;if((state.children||[]).length)family+=state.children.length*5;if(state.partner){if((state.partner.rel||60)<45)family+=14;if((state.partner.trust||60)<45)family+=12}if(state.addiction&&(state.addiction.alcohol||state.addiction.drugs||state.addiction.weed))stress+=10;if(state.fightCareer?.active||state.wrestling?.active)stress+=5;state.lifeEngine.stress=c167(stress,0,100);state.lifeEngine.familyPressure=c167(family,0,100);state.lifeEngine.lifestylePressure=c167(lifestyle,0,100)}
   function applyLinkedConsequences167(){ensureLife167();calculatePressure167();const le=state.lifeEngine;let lines=[],d={Happiness:0,Health:0,Stamina:0,Smarts:0};if(le.stress>70){d.Happiness-=4;d.Health-=3;d.Stamina-=4;lines.push('Hoge stress vrat aan gezondheid, stamina en geluk.');if(state.partner){state.partner.rel=c167((state.partner.rel||60)-3);lines.push('Mijn partner merkte mijn stress en de relatie kreeg druk.')}if(state.work){state.work.burnout=c167((state.work.burnout||0)+5);lines.push('Werkstress duwde burnout omhoog.')}}else if(le.stress<25&&state.age>=18){d.Happiness+=2;d.Health+=1;lines.push('Lage stress gaf rust en herstel.')}if(le.familyPressure>20&&state.partner){state.partner.rel=c167((state.partner.rel||60)-2);d.Happiness-=2;lines.push('Gezinsdruk zorgde voor kleine relatiefrictie.')}if((state.lifestyle?.yearlyCosts||0)>6000){d.Happiness+=2;if((state.debts||0)>0||(state.lifestyle?.loans||[]).length){d.Smarts-=1;lines.push('Mijn luxe lifestyle voelde goed, maar met schulden werd het financieel dom.')}else lines.push('Mijn lifestyle gaf comfort en status.')}if(state.wrestling?.contract?.pro||state.fightCareer?.contract?.pro){if(le.stress>60){d.Health-=2;lines.push('Pro-sport druk maakte herstel belangrijker.')}if(state.partner&&(state.partner.rel||60)<50){lines.push('Fame en veel weg zijn zette mijn relatie extra onder druk.');state.partner.rel=c167((state.partner.rel||60)-2)}}Object.entries(d).forEach(([k,v])=>{if(v)safeStat167(k,v)});return lines}
-  function randomLifeEvent167(){ensureLife167();if(state.age<16)return null;const le=state.lifeEngine,eco=economySnapshot167(),events=[];events.push(()=>{const cost=Math.min(state.money,r(80,650));state.money-=cost;return ['Kapotte spullen',`Er ging thuis iets kapot. Reparatiekosten: ${m167(cost)}.`,'warn',{Happiness:-1}]});if(state.job)events.push(()=>{if(state.work){state.work.performance=c167((state.work.performance||50)+r(-2,4));state.work.stress=c167((state.work.stress||20)+r(2,8))}return ['Werkdruk',p167(['Er kwam een lastige week op werk. Ik moest schakelen.','Een collega liet werk liggen en ik moest het opvangen.','Mijn manager wilde ineens extra resultaat zien.']),'warn',{Stamina:-3,Happiness:-1}]});if(state.partner)events.push(()=>{let good=Math.random()<((state.partner.rel||60)/100);state.partner.rel=c167((state.partner.rel||60)+(good?r(2,6):-r(3,8)));return ['Relatiemoment',good?'Mijn partner en ik hadden een sterke avond samen.':'Er was spanning thuis. Niet rampzalig, wel voelbaar.',good?'good':'warn',{Happiness:good?4:-3}]});if((state.children||[]).length)events.push(()=>{let child=p167(state.children);child.rel=c167((child.rel||50)+r(-4,6));child.happiness=c167((child.happiness||50)+r(-5,7));return ['Kind moment',`${child.name} had aandacht nodig. Kleine keuze, grote ouder-impact.`,'warn',{Happiness:r(-2,3)}]});if((state.lifestyle?.investments||[]).length)events.push(()=>{let inv=p167(state.lifestyle.investments),bonus=Math.round((inv.value||0)*r(1,7)/100);inv.value+=bonus;return ['Investering meevaller',`${inv.name} kreeg een kleine meevaller: +${m167(bonus)}.`,'good',{Smarts:1}]});if((state.lifestyle?.businesses||[]).length)events.push(()=>{let b=p167(state.lifestyle.businesses),hit=r(-1200,3500);b.value=Math.max(0,(b.value||0)+Math.round(hit*.4));state.money+=hit;return ['Business event',`${b.name} had een ${hit>=0?'meevaller':'tegenvaller'} van ${m167(hit)}.`,hit>=0?'good':'warn',{Smarts:1,Happiness:hit>=0?2:-2}]});if(eco.debts>5000)events.push(()=>['Geldstress','Schulden bleven in mijn hoofd zitten. Alles voelt duurder als je achterloopt.','bad',{Happiness:-4,Smarts:1}]);if(le.stress>65)events.push(()=>['Stressklap',p167(['Ik sliep slecht en werd prikkelbaar.','Ik had zo’n week dat alles tegelijk kwam.','Mijn hoofd stond continu aan.']),'bad',{Health:-3,Stamina:-5,Happiness:-3}]);if(state.wrestling?.active||state.fightCareer?.active)events.push(()=>['Sportcarrière moment',p167(['Een coach gaf keiharde feedback. Nuttig, maar pijnlijk.','Fans begonnen mijn naam vaker te herkennen.','Een kleine blessure herinnerde me dat sport geen normale baan is.']),'warn',{Fitness:1,Health:-1,Happiness:2}]);const chosen=p167(events)();if(chosen&&chosen[3])applyStats(chosen[3]);return {title:chosen[0],text:chosen[1],type:chosen[2]}}
+  function randomLifeEvent167(){ensureLife167();if(state.age<16)return null;const le=state.lifeEngine,eco=economySnapshot167(),events=[];if(state.age < 18){
+    events.push(()=>['Kapotte spullen','Er ging thuis iets kapot, maar als minderjarige kreeg ik geen rekening en kon ik geen schuld maken. Ouders/verzorgers regelden de kosten.','warn',{Happiness:-1}]);
+  }else{
+    events.push(()=>{const cost=Math.min(state.money,r(80,650));state.money-=cost;return ['Kapotte spullen',`Er ging thuis iets kapot. Reparatiekosten: ${m167(cost)}.`,'warn',{Happiness:-1}]});
+  }if(state.job)events.push(()=>{if(state.work){state.work.performance=c167((state.work.performance||50)+r(-2,4));state.work.stress=c167((state.work.stress||20)+r(2,8))}return ['Werkdruk',p167(['Er kwam een lastige week op werk. Ik moest schakelen.','Een collega liet werk liggen en ik moest het opvangen.','Mijn manager wilde ineens extra resultaat zien.']),'warn',{Stamina:-3,Happiness:-1}]});if(state.partner)events.push(()=>{let good=Math.random()<((state.partner.rel||60)/100);state.partner.rel=c167((state.partner.rel||60)+(good?r(2,6):-r(3,8)));return ['Relatiemoment',good?'Mijn partner en ik hadden een sterke avond samen.':'Er was spanning thuis. Niet rampzalig, wel voelbaar.',good?'good':'warn',{Happiness:good?4:-3}]});if((state.children||[]).length)events.push(()=>{let child=p167(state.children);child.rel=c167((child.rel||50)+r(-4,6));child.happiness=c167((child.happiness||50)+r(-5,7));return ['Kind moment',`${child.name} had aandacht nodig. Kleine keuze, grote ouder-impact.`,'warn',{Happiness:r(-2,3)}]});if((state.lifestyle?.investments||[]).length)events.push(()=>{let inv=p167(state.lifestyle.investments),bonus=Math.round((inv.value||0)*r(1,7)/100);inv.value+=bonus;return ['Investering meevaller',`${inv.name} kreeg een kleine meevaller: +${m167(bonus)}.`,'good',{Smarts:1}]});if((state.lifestyle?.businesses||[]).length)events.push(()=>{let b=p167(state.lifestyle.businesses),hit=r(-1200,3500);b.value=Math.max(0,(b.value||0)+Math.round(hit*.4));state.money+=hit;return ['Business event',`${b.name} had een ${hit>=0?'meevaller':'tegenvaller'} van ${m167(hit)}.`,hit>=0?'good':'warn',{Smarts:1,Happiness:hit>=0?2:-2}]});if(eco.debts>5000)events.push(()=>['Geldstress','Schulden bleven in mijn hoofd zitten. Alles voelt duurder als je achterloopt.','bad',{Happiness:-4,Smarts:1}]);if(le.stress>65)events.push(()=>['Stressklap',p167(['Ik sliep slecht en werd prikkelbaar.','Ik had zo’n week dat alles tegelijk kwam.','Mijn hoofd stond continu aan.']),'bad',{Health:-3,Stamina:-5,Happiness:-3}]);if(state.wrestling?.active||state.fightCareer?.active)events.push(()=>['Sportcarrière moment',p167(['Een coach gaf keiharde feedback. Nuttig, maar pijnlijk.','Fans begonnen mijn naam vaker te herkennen.','Een kleine blessure herinnerde me dat sport geen normale baan is.']),'warn',{Fitness:1,Health:-1,Happiness:2}]);const chosen=p167(events)();if(chosen&&chosen[3])applyStats(chosen[3]);return {title:chosen[0],text:chosen[1],type:chosen[2]}}
   function checkGoals167(){ensureLife167();let unlocked=[];GOALS167.forEach(g=>{if(!state.lifeEngine.goals.includes(g.id)){let ok=false;try{ok=!!g.check()}catch(e){}if(ok){state.lifeEngine.goals.push(g.id);state.money=(state.money||0)+(g.reward||0);unlocked.push(g);try{addAchievement(g.icon+' '+g.name)}catch(e){state.achievements.push(g.icon+' '+g.name)}}}});return unlocked}
   function buildYearReport167(extraLines=[],event=null,goals=[]){const eco=economySnapshot167(),le=state.lifeEngine;const report={age:state.age,cash:eco.cash,netWorth:eco.netWorth,income:eco.income,expenses:eco.expenses,debts:eco.debts,stress:le.stress,familyPressure:le.familyPressure,lifestylePressure:le.lifestylePressure,event,goals:goals.map(g=>g.name),lines:extraLines};state.lifeEngine.yearReports.push(report);if(state.lifeEngine.yearReports.length>12)state.lifeEngine.yearReports.shift();state.lifeEngine.lastYear=report;return report}
   function reportHTML167(rep){const event=rep.event?`<div class="card"><b>${rep.event.title}</b><br>${rep.event.text}</div>`:'';const goals=rep.goals.length?`<div class="card"><b>Life goals gehaald</b><br>${rep.goals.map(x=>'🏆 '+x).join('<br>')}</div>`:'';const lines=rep.lines.length?`<div class="card"><b>Gekoppelde gevolgen</b><br>${rep.lines.join('<br>')}</div>`:'';return `<div class="modalTop"><div class="avatar">📆</div><div class="modalTitle">Jaarverslag leeftijd ${rep.age}</div></div><div class="modalBody"><div class="card"><b>Financieel jaar</b><br>Cash: ${m167(rep.cash)}<br>Net worth: ${m167(rep.netWorth)}<br>Laatste inkomen: ${m167(rep.income)}<br>Laatste uitgaven: ${m167(rep.expenses)}<br>Schulden/leningen: ${m167(rep.debts)}</div><div class="card"><b>Levensdruk</b><br>Stress: ${rep.stress}%<br>Gezinsdruk: ${rep.familyPressure}%<br>Lifestyle druk: ${rep.lifestylePressure}%</div>${lines}${event}${goals}<button class="btn" onclick="lifeGoalsScreen167()">🏆 Life goals bekijken</button><button class="btn" onclick="yearReportsScreen167()">📚 Oude jaarverslagen</button><button class="btn alt" onclick="closeModal()">Verder</button></div>`}
@@ -11949,4 +11987,353 @@ loadGame();
   }
 
   setTimeout(()=>{try{ensureW168();safeSave()}catch(e){}},300);
+})();
+
+
+/* v17.7 Combat Career Rework */
+(function(){
+  function m177(v){try{return money(v)}catch(e){return '€ '+Math.round(v||0).toLocaleString('nl-NL')}}
+  function c177(v,min=0,max=100){return Math.max(min,Math.min(max,Math.round(v||0)))}
+  function r177(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+  function p177(a){return a[Math.floor(Math.random()*a.length)]}
+  const MOVES177={
+    jab:{name:'Jab',group:'strike',power:8,cost:4,acc:86,desc:'Veilige score move.',stat:'striking',rules:['mma','kickboxing']},
+    lowKick:{name:'Low Kick',group:'strike',power:11,cost:6,acc:76,desc:'Slijt de benen en cardio weg.',stat:'striking',rules:['mma','kickboxing']},
+    leftHook:{name:'Left Hook',group:'strike',power:16,cost:9,acc:69,desc:'Power shot op de kaak.',stat:'striking',rules:['mma','kickboxing'],price:35},
+    headKick:{name:'Head Kick',group:'strike',power:22,cost:14,acc:58,desc:'Flashy, gevaarlijk en duur.',stat:'striking',rules:['mma','kickboxing'],price:90},
+    clinchKnee:{name:'Clinch Knee',group:'strike',power:14,cost:8,acc:70,desc:'Sterk tegen vermoeide tegenstanders.',stat:'striking',rules:['mma','kickboxing'],price:55},
+    doubleLeg:{name:'Double Leg',group:'wrestle',power:9,cost:8,acc:74,desc:'Brengt de fight naar de grond.',stat:'wrestling',rules:['mma']},
+    bodyLock:{name:'Body Lock',group:'wrestle',power:10,cost:8,acc:72,desc:'Clinchcontrole en trips.',stat:'wrestling',rules:['mma'],price:40},
+    groundPound:{name:'Ground & Pound',group:'ground',power:18,cost:12,acc:72,desc:'Brute schade vanaf top control.',stat:'wrestling',rules:['mma'],price:70},
+    guillotine:{name:'Guillotine',group:'submission',power:18,cost:13,acc:58,desc:'Snelle submissionkans bij slordige entries.',stat:'grappling',rules:['mma'],price:80},
+    rearNakedChoke:{name:'Rear Naked Choke',group:'submission',power:24,cost:14,acc:54,desc:'Dodelijk als je de rug hebt.',stat:'grappling',rules:['mma'],price:120},
+    recover:{name:'Recover',group:'utility',power:0,cost:0,acc:100,desc:'Herstel een deel stamina.',stat:'cardio',rules:['mma','kickboxing']},
+    defend:{name:'Defend',group:'utility',power:0,cost:3,acc:100,desc:'Veilig spelen en minder schade pakken.',stat:'defense',rules:['mma','kickboxing']}
+  };
+  const STYLE177={
+    striker:{label:'Striker',bonuses:{striking:10,power:6,cardio:2,defense:-2},fav:['jab','lowKick','leftHook','headKick','clinchKnee']},
+    wrestler:{label:'Wrestler',bonuses:{wrestling:12,cardio:3,defense:3,striking:-2},fav:['jab','doubleLeg','bodyLock','groundPound','defend']},
+    submission:{label:'Submission Artist',bonuses:{grappling:12,fightIQ:5,cardio:2,power:-2},fav:['jab','doubleLeg','guillotine','rearNakedChoke','recover']},
+    brawler:{label:'Brawler',bonuses:{power:10,chin:6,striking:4,defense:-5,cardio:-3},fav:['leftHook','lowKick','headKick','clinchKnee','defend']},
+    balanced:{label:'Balanced Fighter',bonuses:{striking:4,wrestling:4,grappling:4,defense:4,cardio:4},fav:['jab','lowKick','doubleLeg','rearNakedChoke','defend']}
+  };
+  function combatMaxHp177(c){return 100+Math.round((c.stats.chin||40)*0.8)+Math.round((state.stats.Health||50)*0.3)}
+  function combatMaxStam177(c){return 90+Math.round((c.stats.cardio||40)*0.9)+Math.round((state.stamina||50)*0.2)}
+  function ensureCombat177(){
+    state.skills=state.skills||{};
+    state.fightCareer=state.fightCareer||{active:false,level:'none',skill:0,form:50,wins:0,losses:0,fame:0};
+    state.combat=state.combat||{
+      active:false,style:'balanced',ruleset:'mma',gymLevel:1,coachRelation:50,streetCreds:0,league:'amateur',rank:null,officialPoints:0,belt:false,
+      record:{wins:0,losses:0,ko:0,sub:0,dec:0},
+      stats:{striking:35,wrestling:30,grappling:30,defense:34,cardio:35,power:34,chin:40,fightIQ:32},
+      unlockedMoves:['jab','lowKick','doubleLeg','rearNakedChoke'],
+      equippedMoves:['jab','lowKick','doubleLeg','rearNakedChoke'],
+      injuries:[],tempBoost:null,lastFight:null
+    };
+    const c=state.combat;
+    c.record=c.record||{wins:0,losses:0,ko:0,sub:0,dec:0};
+    c.stats=c.stats||{striking:35,wrestling:30,grappling:30,defense:34,cardio:35,power:34,chin:40,fightIQ:32};
+    c.unlockedMoves=Array.isArray(c.unlockedMoves)&&c.unlockedMoves.length?c.unlockedMoves:['jab','lowKick','doubleLeg','rearNakedChoke'];
+    c.equippedMoves=Array.isArray(c.equippedMoves)&&c.equippedMoves.length?c.equippedMoves:c.unlockedMoves.slice(0,4);
+    c.ruleset=c.ruleset||'mma'; c.style=c.style||'balanced'; c.league=c.league||'amateur'; c.streetCreds=c.streetCreds||0; c.coachRelation=c177(c.coachRelation||50);
+    const bonus=(STYLE177[c.style]?.bonuses)||{};
+    Object.keys(c.stats).forEach(k=>c.stats[k]=c177(c.stats[k]));
+    c.maxHp=combatMaxHp177(c); c.maxStamina=combatMaxStam177(c);
+    // sync basic pro-fight layer
+    if(c.active){
+      state.fightCareer.active=true;
+      state.fightCareer.skill=Math.max(state.fightCareer.skill||0, Math.round((c.stats.striking+c.stats.wrestling+c.stats.grappling)/3));
+      state.fightCareer.wins=c.record.wins; state.fightCareer.losses=c.record.losses;
+      state.fightCareer.fame=Math.max(state.fightCareer.fame||0, Math.round((c.streetCreds||0)/3)+(c.belt?18:0));
+      if(c.ruleset==='mma'){
+        state.fightCareer.level=c.belt?'champion':(c.league==='ufc'?'ufc':(c.league==='contender'?'contender':'mma'));
+      }else{
+        state.fightCareer.level=c.belt?'champion':(c.league==='glory'?'glory':(c.league==='contender'?'contender':'amateur'));
+      }
+    }
+    return c;
+  }
+  function combatStyleText177(style){return STYLE177[style]?.label||style}
+  function combatStatCard177(){
+    const c=ensureCombat177(), rec=c.record||{};
+    return `<div class="card"><b>My Fighter</b><br>${combatStyleText177(c.style)} · ${c.ruleset==='mma'?'MMA':'Kickboxing'} · league ${c.league}${c.belt?' · Champion':''}<br>Record ${rec.wins}-${rec.losses} · KO ${rec.ko} · SUB ${rec.sub} · DEC ${rec.dec}<br>Street Creds: ${c.streetCreds} · Coach relation ${c.coachRelation}%<br>Rank: ${c.rank==null?'Unranked':'#'+c.rank} · Official points ${c.officialPoints||0}<br>HP ${c.maxHp} · Max stamina ${c.maxStamina}</div>`+
+      `<div class="card"><b>Fight stats</b><br>Striking ${c.stats.striking}% · Wrestling ${c.stats.wrestling}% · Grappling ${c.stats.grappling}%<br>Defense ${c.stats.defense}% · Cardio ${c.stats.cardio}% · Power ${c.stats.power}%<br>Chin ${c.stats.chin}% · Fight IQ ${c.stats.fightIQ}%</div>`;
+  }
+  function moveLine177(id){const mv=MOVES177[id];if(!mv)return '';const eq=ensureCombat177().equippedMoves.includes(id)?' ✅ equipped':'';return `<div class="card"><b>${mv.name}</b>${eq}<br>${mv.desc}<br>Power ${mv.power} · stamina cost ${mv.cost} · accuracy ${mv.acc}% · ${mv.group}</div>`}
+  function availableMoves177(){const c=ensureCombat177();return Object.keys(MOVES177).filter(id=>id!=='recover'&&id!=='defend'&&MOVES177[id].rules.includes(c.ruleset))}
+  function legalMoves177(){const c=ensureCombat177();return c.equippedMoves.filter(id=>MOVES177[id]&&MOVES177[id].rules.includes(c.ruleset));}
+  function nextLeague177(c){const wins=c.record.wins||0;if(c.ruleset==='mma'){if(c.belt)return 'champion'; if(wins>=10&& (c.rank||99)<=3)return 'title'; if(wins>=8)return 'contender'; if(wins>=5)return 'ufc'; if(wins>=2)return 'regional'; return 'amateur';}else{if(c.belt)return 'champion'; if(wins>=9&&(c.rank||99)<=3)return 'title'; if(wins>=7)return 'contender'; if(wins>=4)return 'glory'; if(wins>=2)return 'regional'; return 'amateur';}}
+  function leagueBlurb177(type,c){const next=nextLeague177(c);if(type==='street')return 'Street fights leveren street creds en harde ervaring op, maar ook blessure- en legal risico.';return `Officiële league: ${c.ruleset==='mma'?'MMA/UFC':'GLORY/Kickboxing'} · huidige stap ${c.league}. Volgende logische stap: ${next}.`}
+  window.combatCareerHub177=function(){
+    const c=ensureCombat177();
+    showModal(`<div class="modalTop"><div class="avatar">🥊</div><div class="modalTitle">Combat Career</div></div><div class="modalBody">${combatStatCard177()}${c.active?'':`<div class="card"><b>Start je fighter</b><br>Kies eerst een basisstijl en ruleset. Daarna kun je trainen, street creds pakken en officiële fights doen.</div>`}<button class="btn" onclick="combatStartScreen177()">${c.active?'⚙️ Fighter setup wijzigen':'🚀 Start / Setup fighter'}</button><button class="btn" onclick="combatLeagueScreen177()">🏆 Fight League</button><button class="btn" onclick="combatStreetScreen177()">🥊 Street Fighting</button><button class="btn" onclick="combatMoveSet177()">👊 Move Set</button><button class="btn" onclick="combatSkillShop177()">🧠 Skill Shop</button><button class="btn" onclick="combatTrainingCamp177()">🏋️ Training Camp</button><button class="btn" onclick="combatCoachScreen177()">🎯 Coach</button><button class="btn" onclick="combatRecoveryScreen177()">🩹 Recovery / Medical</button><button class="btn ${state.age>=18?'':'locked'}" onclick="${state.age>=18?`combatDopingScreen177()`:''}">💉 Steroids / Doping</button><button class="btn red" onclick="combatRetire177()">🥊 Retire</button><button class="btn alt" onclick="closeModal()">Terug</button></div>`)
+  };
+  window.combatStartScreen177=function(){
+    if(state.age<16)return toast('Combat career kan vanaf 16.');
+    const c=ensureCombat177();
+    const styleBtns=Object.keys(STYLE177).map(k=>`<button class="btn" onclick="combatChooseBase177('${k}')">${STYLE177[k].label}</button>`).join('');
+    showModal(`<div class="modalTop"><div class="avatar">🧬</div><div class="modalTitle">Choose your fighter</div></div><div class="modalBody">${combatStatCard177()}<div class="card"><b>Ruleset</b><br>Huidig: ${c.ruleset==='mma'?'MMA':'Kickboxing'}<br><button class="btn" onclick="combatSetRuleset177('mma')">MMA / UFC route</button><button class="btn" onclick="combatSetRuleset177('kickboxing')">Kickboxing / GLORY route</button></div><div class="card"><b>Fighting style</b><br>Huidig: ${combatStyleText177(c.style)}</div>${styleBtns}<button class="btn alt" onclick="combatCareerHub177()">Terug</button></div>`)
+  };
+  window.combatSetRuleset177=function(rule){const c=ensureCombat177();c.ruleset=rule;c.equippedMoves=c.equippedMoves.filter(id=>MOVES177[id]&&MOVES177[id].rules.includes(rule));if(c.equippedMoves.length<4){availableMoves177().forEach(id=>{if(c.equippedMoves.length<4&&!c.equippedMoves.includes(id))c.equippedMoves.push(id)})}safeSave();combatStartScreen177()};
+  window.combatChooseBase177=function(style){
+    const c=ensureCombat177();
+    c.active=true; c.style=style; c.ruleset=c.ruleset||'mma'; c.gymLevel=Math.max(1,c.gymLevel||1);
+    c.unlockedMoves=Array.from(new Set((STYLE177[style].fav||[]).concat(['jab','recover','defend']).filter(id=>MOVES177[id]&&MOVES177[id].rules.includes(c.ruleset)||['recover','defend'].includes(id))));
+    if(c.ruleset==='mma'){['jab','doubleLeg','rearNakedChoke','lowKick'].forEach(id=>{if(!c.unlockedMoves.includes(id) && MOVES177[id]) c.unlockedMoves.push(id)});}else{['jab','lowKick','leftHook','clinchKnee'].forEach(id=>{if(!c.unlockedMoves.includes(id) && MOVES177[id]) c.unlockedMoves.push(id)});}
+    c.equippedMoves=c.unlockedMoves.filter(id=>id!=='recover'&&id!=='defend').slice(0,4);
+    const bonus=STYLE177[style].bonuses||{}; Object.keys(bonus).forEach(k=>c.stats[k]=c177((c.stats[k]||35)+bonus[k]));
+    ensureCombat177(); closeModal(); action('Combat Career',`Ik koos de stijl ${combatStyleText177(style)} en startte mijn ${c.ruleset==='mma'?'MMA':'kickboxing'}-route.`,{Fitness:2,Stamina:2,Happiness:5},0,'good');
+  };
+  function opponentPool177(type,ruleset){
+    const street=[['Jake Bulkley','Wrestler',1],['Cameron Murphy','Wrestler',1],['Bernard Davies','Wrestler',2],['Eri Hazan','Striker',3],['Fionn Griffiths','Wrestler',3],['Luca Moreno','Brawler',2],['Mick Doyle','Submission Artist',4]];
+    const league=[['Camila McClure','Striker',2],['Laila Springer','Submission Artist',2],['Popkin','Wrestler',3],['Guerin','Counter Striker',4],['Rosa Silva','Kickboxer',4],['Kenji Arai','Pressure Grappler',5],['Duke Sup','Brawler',3]];
+    const src=type==='street'?street:league;
+    return src.map(x=>({name:x[0],style:x[1],level:x[2],ruleset,rank:type==='league'?Math.max(1,16-x[2]*2):null}));
+  }
+  function enemyStats177(level,style){
+    const base=30+level*6; return {striking:c177(base+r177(-4,10)),wrestling:c177(base+r177(-4,10)),grappling:c177(base+r177(-4,10)),defense:c177(base+r177(-2,8)),cardio:c177(base+r177(-3,9)),power:c177(base+r177(-3,10)),chin:c177(base+r177(-1,10)),fightIQ:c177(base+r177(-2,8))};
+  }
+  function startFightAnnouncement177(kind,opp){
+    window.__fight177={kind,ruleset:opp.ruleset,opponent:opp,round:1,maxRounds:kind==='title'?5:3,playerDefend:false,oppDefend:false,log:[`Today's thrilling match is between ${state.name} and ${opp.name}.`],control:'neutral'};
+    const c=ensureCombat177(); const f=window.__fight177; f.playerHp=c.maxHp; f.playerStam=c.maxStamina; f.oppStats=enemyStats177(opp.level,opp.style); f.oppHp=100+Math.round(f.oppStats.chin*0.8); f.oppStam=90+Math.round(f.oppStats.cardio*0.9); f.turn='player';
+    showModal(`<div class="modalTop"><div class="avatar">🥊</div><div class="modalTitle">Fight Night</div></div><div class="modalBody"><div class="card"><b>${opp.name}</b><br>${opp.style} · lvl ${opp.level}${opp.rank?` · rank #${opp.rank}`:''}</div><div class="card"><b>You</b><br>${combatStyleText177(c.style)} · ${c.ruleset==='mma'?'Submission/Striking mix':'Kickboxing route'} · HP ${c.maxHp} / Stamina ${c.maxStamina}</div><div class="card">Today's thrilling match is between:<br><b>${state.name} (You)</b><br>&<br><b>${opp.name}</b></div><button class="btn green" onclick="combatFightScreen177()">Let's get it on!</button><button class="btn alt" onclick="combatCareerHub177()">Terug</button></div>`)
+  }
+  function bar177(label,val,max,color){const pct=max?Math.max(0,Math.min(100,Math.round((val/max)*100))):0;return `<div style="margin:6px 0"><b>${label}</b><div style="height:14px;background:#e6e6e6;border-radius:4px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${color}"></div></div><span class="mini">${Math.round(val)}/${Math.round(max)}</span></div>`}
+  function fightHeader177(){const c=ensureCombat177(),f=window.__fight177;if(!f)return '';const tail=f.log.slice(-3).join('<br>');return `<div class="card"><b>Round ${f.round}/${f.maxRounds}</b><br>${f.opponent.name} · ${f.opponent.style}${f.opponent.rank?` · rank #${f.opponent.rank}`:''}<br>${bar177('Opponent HP',f.oppHp,f.oppHpMax||f.oppHp+0,'#2ead49')}${bar177('Opponent stamina',f.oppStam,f.oppStamMax||f.oppStam+0,'#66b2ff')}<hr>${bar177('Your HP',f.playerHp,c.maxHp,'#2ead49')}${bar177('Your stamina',f.playerStam,c.maxStamina,'#1a84d8')}<b>Control:</b> ${f.control}<br><br>${tail}</div>`}
+  function moveButtons177(){const c=ensureCombat177();const moves=legalMoves177().map(id=>{const mv=MOVES177[id];const disabled=fightMoveDisabled177(id)?'locked':'';return `<button class="btn ${disabled}" onclick="${disabled?'':`combatUseMove177('${id}')`}">${mv.name}<br><span class="mini">Pow ${mv.power} · Cost ${mv.cost}</span></button>`}).join('');return moves+`<button class="btn alt" onclick="combatUseMove177('recover')">Recover<br><span class="mini">stamina terug</span></button><button class="btn alt" onclick="combatUseMove177('defend')">Defend<br><span class="mini">minder schade</span></button>`}
+  function fightMoveDisabled177(id){const f=window.__fight177,mv=MOVES177[id];if(!f||!mv)return true;if((f.playerStam||0)<(mv.cost||0))return true;if(f.ruleset==='kickboxing' && ['doubleLeg','bodyLock','groundPound','guillotine','rearNakedChoke'].includes(id))return true;return false}
+  window.combatFightScreen177=function(){const f=window.__fight177;if(!f)return;showModal(`<div class="modalTop"><div class="avatar">🥊</div><div class="modalTitle">Fight Night</div></div><div class="modalBody">${fightHeader177()}${moveButtons177()}<button class="btn alt" onclick="combatCareerHub177()">Forfeit / Exit</button></div>`)};
+  function statForMove177(stats,mv){if(mv.group==='strike')return stats.striking||35;if(mv.group==='wrestle'||mv.group==='ground')return stats.wrestling||35;if(mv.group==='submission')return stats.grappling||35;return stats.cardio||35}
+  function resolveHit177(attStats,defStats,stam,mv,control,defending){
+    const stat=statForMove177(attStats,mv); let acc=mv.acc + (attStats.fightIQ||35)*0.18 - (defStats.defense||35)*0.18 + (stam<25?-12:0) + (defending?-12:0);
+    if(mv.group==='submission' && control!=='playerGround' && control!=='oppGround')acc-=16;
+    if(mv.group==='ground' && control!=='playerGround' && control!=='oppGround')acc-=18;
+    const hit=Math.random()*100<acc;
+    let damage=0, finish=null, text='';
+    if(mv.name==='Recover'){return {hit:true,damage:0,stamGain:r177(14,26),controlChange:null,text:'Je pakte even rust en herstelde gas.'}}
+    if(mv.name==='Defend'){return {hit:true,damage:0,stamGain:4,defend:true,controlChange:null,text:'Je koos voor defense en discipline.'}}
+    if(hit){
+      damage=Math.max(4, Math.round(mv.power + stat*0.28 + (attStats.power||35)*0.16 - (defStats.chin||40)*0.12 - (defending?4:0) + r177(-5,8)));
+      if(mv.group==='submission'){
+        const subChance=(stat*0.5 + (attStats.fightIQ||30)*0.2 - (defStats.chin||40)*0.1 + (stam<30?8:0) + r177(-10,10));
+        if(subChance>34 && Math.random()<0.26) finish='submission';
+      }
+      if(mv.group==='strike' && damage>24 && Math.random()<0.15 + ((attStats.power||35)/250)) finish='ko';
+      if(['doubleLeg','bodyLock'].includes(mv===undefined?'':mv.id)){ }
+      if(mv.group==='wrestle')text='Takedown/control geland.'; else if(mv.group==='submission')text='Submission aangezet.'; else text='Shot geland.';
+    } else text='Je miste of de tegenstander las het goed.';
+    let controlChange=null;
+    if(hit && ['doubleLeg','bodyLock'].includes(mv.id||''))controlChange='playerGround';
+    if(hit && mv.id==='groundPound')controlChange='playerGround';
+    return {hit,damage,finish,text,stamGain:0,controlChange};
+  }
+  function aiMove177(){const f=window.__fight177;if(!f)return 'jab';const s=(f.opponent.style||'').toLowerCase(); if(f.oppStam<20)return p177(['recover','defend']); if(f.ruleset==='kickboxing'){if(s.includes('kick'))return p177(['lowKick','leftHook','clinchKnee']); if(s.includes('counter'))return p177(['jab','defend','leftHook']); return p177(['jab','lowKick','leftHook','headKick']);} if(s.includes('wrest'))return p177(['jab','doubleLeg','bodyLock','groundPound']); if(s.includes('submission'))return p177(['jab','doubleLeg','guillotine','rearNakedChoke']); if(s.includes('brawler'))return p177(['leftHook','headKick','lowKick']); return p177(['jab','lowKick','leftHook','defend']); }
+  function applyOpponentStyle177(stats,style){const txt=(style||'').toLowerCase();if(txt.includes('wrest'))stats.wrestling=c177(stats.wrestling+8);if(txt.includes('submission'))stats.grappling=c177(stats.grappling+8);if(txt.includes('kick')||txt.includes('strik')||txt.includes('counter'))stats.striking=c177(stats.striking+7);if(txt.includes('brawler')){stats.power=c177(stats.power+8);stats.defense=c177(stats.defense-4)}return stats}
+  window.combatUseMove177=function(id){
+    const f=window.__fight177; if(!f)return;
+    const c=ensureCombat177(); const mv=Object.assign({id}, MOVES177[id]||MOVES177.jab);
+    if(fightMoveDisabled177(id)) return toast('Niet genoeg stamina of move niet legaal.');
+    const pStats=Object.assign({},c.stats); const oStats=applyOpponentStyle177(Object.assign({},f.oppStats), f.opponent.style);
+    f.playerDefend=false; f.oppDefend=false;
+    f.playerStam=Math.max(0,f.playerStam-(mv.cost||0));
+    const res=resolveHit177(pStats,oStats,f.playerStam,mv,f.control,f.oppDefend); if(res.stamGain)f.playerStam=Math.min(c.maxStamina,f.playerStam+res.stamGain); if(res.defend)f.playerDefend=true; if(res.hit&&res.damage){f.oppHp=Math.max(0,f.oppHp-res.damage);} if(res.controlChange)f.control='playerGround';
+    f.log.push(`Jij: ${mv.name}. ${res.text}${res.hit&&res.damage?` ${res.damage} damage.`:''}`);
+    if(res.finish||f.oppHp<=0)return finishFight177(true,res.finish||'ko');
+    const aiId=aiMove177(); const omv=Object.assign({id:aiId}, MOVES177[aiId]||MOVES177.jab); f.oppStam=Math.max(0,f.oppStam-(omv.cost||0));
+    const aiRes=resolveHit177(oStats,pStats,f.oppStam,omv,f.control,f.playerDefend); if(aiRes.stamGain)f.oppStam=Math.min(100,f.oppStam+aiRes.stamGain); if(aiRes.defend)f.oppDefend=true; if(aiRes.hit&&aiRes.damage){f.playerHp=Math.max(0,f.playerHp-aiRes.damage)} if(aiRes.controlChange)f.control='oppGround';
+    f.log.push(`${f.opponent.name}: ${omv.name}. ${aiRes.text}${aiRes.hit&&aiRes.damage?` ${aiRes.damage} damage.`:''}`);
+    if(aiRes.finish||f.playerHp<=0)return finishFight177(false,aiRes.finish||'ko');
+    f.round++; f.control='neutral';
+    if(f.round>f.maxRounds)return finishFight177(f.playerHp>=f.oppHp, 'decision');
+    combatFightScreen177();
+  };
+  function finishFight177(playerWin,method){
+    const c=ensureCombat177(),f=window.__fight177;if(!f)return; const rec=c.record; const kind=f.kind; let cashReward=0, credReward=0, type='good';
+    if(playerWin){rec.wins++; if(method==='ko')rec.ko++; else if(method==='submission')rec.sub++; else rec.dec++; credReward=kind==='street'?r177(10,22):r177(16,36); cashReward=kind==='street'?r177(40,260):r177(600,6000); c.streetCreds+=credReward; c.officialPoints=c177((c.officialPoints||0)+(kind==='street'?4:10),0,999); c.rank=c.rank==null?(kind==='street'?null:15):Math.max(1,c.rank-(kind==='street'?0:1)); if(kind!=='street'){c.league=nextLeague177(c); if((c.league==='title' || ((c.rank||99)<=2 && rec.wins>=10)) && !c.belt){c.belt=true; c.league=(c.ruleset==='mma'?'ufc':'glory'); c.rank=1;}} }
+    else {rec.losses++; cashReward=kind==='street'?r177(0,80):r177(120,1200); c.streetCreds=Math.max(0,(c.streetCreds||0)-r177(2,8)); if(kind!=='street'&&c.rank!=null)c.rank=Math.min(15,c.rank+1); type='bad'; }
+    state.money=(state.money||0)+cashReward; state.stats.Health=c177((state.stats.Health||50)-(playerWin?r177(1,4):r177(4,10))); state.stamina=c177((state.stamina||50)-r177(8,18)); if(!playerWin && Math.random()<0.45){c.injuries.push(p177(['cut above eye','rib damage','sprained knee','sore neck'])); c.injuries=c.injuries.slice(-5);} c.lastFight={kind,win:playerWin,method,opponent:f.opponent.name}; ensureCombat177(); closeModal(); action('Fight Night',`${playerWin?'Je won!':'Je verloor.'}<br>${f.log.slice(-6).join('<br>')}<br><br>Result: ${playerWin?'WIN':'LOSS'} via ${method}.<br>Street Creds ${playerWin?'+':''}${playerWin?credReward:0}${!playerWin?' (verlies reputatie)':''}<br>Cash: ${m177(cashReward)}<br>Record: ${rec.wins}-${rec.losses}`,{Happiness:playerWin?10:-7,Fitness:1,Health:playerWin?-2:-7,Stamina:-10},0,type); window.__fight177=null; safeSave(); render();
+  }
+  window.combatStreetScreen177=function(){const c=ensureCombat177(); if(!c.active)return combatStartScreen177(); const cards=opponentPool177('street',c.ruleset).map((o,i)=>row('🥊',`${o.name}`,`${o.style} · lvl ${o.level} · reward street creds`,`combatStreetStart177(${i})`)).join(''); window.__streetList177=opponentPool177('street',c.ruleset); showModal(`<div class="modalTop"><div class="avatar">🥊</div><div class="modalTitle">Street Fighting</div></div><div class="modalBody"><div class="card">${leagueBlurb177('street',c)}</div>${cards}<button class="btn alt" onclick="combatCareerHub177()">Terug</button></div>`)};
+  window.combatStreetStart177=function(i){const list=window.__streetList177||opponentPool177('street',ensureCombat177().ruleset); const opp=list[i]; if(opp)startFightAnnouncement177('street',opp)};
+  window.combatLeagueScreen177=function(){const c=ensureCombat177(); if(!c.active)return combatStartScreen177(); const next=nextLeague177(c); const canTitle=next==='title'||c.belt||((c.rank||99)<=3 && (c.record.wins||0)>=9); showModal(`<div class="modalTop"><div class="avatar">🏆</div><div class="modalTitle">Fight League</div></div><div class="modalBody">${combatStatCard177()}<div class="card">${leagueBlurb177('league',c)}</div><button class="btn" onclick="combatLeagueStart177('prelim')">Prelim / local league</button><button class="btn" onclick="combatLeagueStart177('ranked')">Ranked / contender fight</button><button class="btn ${canTitle?'':'locked'}" onclick="${canTitle?`combatLeagueStart177('title')`:''}">Title fight</button><button class="btn alt" onclick="combatCareerHub177()">Terug</button></div>`)};
+  window.combatLeagueStart177=function(type){const c=ensureCombat177(); const list=opponentPool177('league',c.ruleset); let opp=p177(list); if(type==='title'){opp.rank=1; opp.level=Math.max(5,opp.level+2); opp.name=p177(['Camila McClure','Popkin','Guerin','Kenji Arai'])} if(type==='ranked'){opp.rank=p177([12,10,8,6,4]); opp.level=Math.max(3,opp.level+1)} startFightAnnouncement177(type,opp)};
+  window.combatTrainingCamp177=function(){const c=ensureCombat177(); if(!c.active)return combatStartScreen177(); showModal(`<div class="modalTop"><div class="avatar">🏋️</div><div class="modalTitle">Training Camp</div></div><div class="modalBody">${combatStatCard177()}<button class="btn" onclick="combatTrain177('striking')">🥊 Striking drills</button><button class="btn" onclick="combatTrain177('wrestling')">🤼 Wrestling entries</button><button class="btn" onclick="combatTrain177('grappling')">🫱 Submission chains</button><button class="btn" onclick="combatTrain177('conditioning')">🏃 Conditioning / cardio</button><button class="btn" onclick="combatTrain177('iq')">🧠 Film study / fight IQ</button><button class="btn alt" onclick="combatCareerHub177()">Terug</button></div>`)};
+  window.combatTrain177=function(kind){const c=ensureCombat177(); let txt='',delta={Fitness:1,Stamina:-4}; if(kind==='striking'){c.stats.striking=c177(c.stats.striking+r177(3,7));c.stats.power=c177(c.stats.power+r177(1,3));txt='Ik trainde voetenwerk, jab-lijnen en combinaties.';} if(kind==='wrestling'){c.stats.wrestling=c177(c.stats.wrestling+r177(3,7));c.stats.defense=c177(c.stats.defense+r177(1,2));txt='Ik drillde takedowns, sprawls en clinchcontrol.';} if(kind==='grappling'){c.stats.grappling=c177(c.stats.grappling+r177(3,7));c.stats.fightIQ=c177(c.stats.fightIQ+r177(1,2));txt='Ik trainde chains, back takes en submissions.';} if(kind==='conditioning'){c.stats.cardio=c177(c.stats.cardio+r177(3,8));state.stamina=c177((state.stamina||50)+r177(2,5));txt='Ik pushte mijn gas tank met sprints en circuits.';} if(kind==='iq'){c.stats.fightIQ=c177(c.stats.fightIQ+r177(3,7));c.coachRelation=c177(c.coachRelation+r177(1,4));txt='Ik keek tape en werkte aan timing en gameplans.';} ensureCombat177(); closeModal(); action('Training Camp',txt,delta,0,'good')};
+  window.combatCoachScreen177=function(){const c=ensureCombat177(); if(!c.active)return combatStartScreen177(); showModal(`<div class="modalTop"><div class="avatar">🎯</div><div class="modalTitle">Coach</div></div><div class="modalBody">${combatStatCard177()}<div class="card"><b>Coach relationship</b><br>${c.coachRelation}%<br>Hoge relatie = betere gameplans, snellere groei en meer vertrouwen.</div><button class="btn" onclick="combatCoachAction177('private')">Private session (€250)</button><button class="btn" onclick="combatCoachAction177('gameplan')">Bespreek gameplan</button><button class="btn" onclick="combatCoachAction177('elite')">Elite coach camp (€1200)</button><button class="btn alt" onclick="combatCareerHub177()">Terug</button></div>`)};
+  window.combatCoachAction177=function(type){const c=ensureCombat177(); if(type==='private'){if((state.money||0)<250)return toast('Niet genoeg geld.'); state.money-=250; c.coachRelation=c177(c.coachRelation+r177(4,9)); c.stats.fightIQ=c177(c.stats.fightIQ+r177(2,4)); closeModal(); action('Coach','Ik betaalde voor een private sessie en kreeg scherpere details mee.',{Smarts:1,Stamina:-2},-250,'good'); return;} if(type==='elite'){if((state.money||0)<1200)return toast('Niet genoeg geld.'); state.money-=1200; c.coachRelation=c177(c.coachRelation+r177(8,14)); c.stats.cardio=c177(c.stats.cardio+r177(3,6)); c.stats.striking=c177(c.stats.striking+r177(2,5)); c.stats.wrestling=c177(c.stats.wrestling+r177(2,5)); closeModal(); action('Coach Camp','Ik draaide een elite camp. Alles was strakker, harder en professioneler.',{Fitness:3,Stamina:-5},-1200,'good'); return;} if(type==='gameplan'){closeModal(); action('Coach','Mijn coach zei: “vecht slim, niet stoer.” Het klonk simpel, maar het hielp.',{Smarts:2,Happiness:2},0,'good'); c.coachRelation=c177(c.coachRelation+r177(1,3)); return;} };
+  window.combatMoveSet177=function(){const c=ensureCombat177(); if(!c.active)return combatStartScreen177(); const rows=availableMoves177().map(id=>{const mv=MOVES177[id];const owned=c.unlockedMoves.includes(id);const eq=c.equippedMoves.includes(id);return `<div class="card"><b>${mv.name}</b>${eq?' ✅':''}<br>${mv.desc}<br>Power ${mv.power} · Cost ${mv.cost} · Accuracy ${mv.acc}%<br>${owned?`<button class="btn" onclick="combatEquipMove177('${id}')">${eq?'Unequip':'Equip'}</button>`:`<span class="mini">Koop in Skill Shop</span>`}</div>`}).join(''); showModal(`<div class="modalTop"><div class="avatar">👊</div><div class="modalTitle">Move Set</div></div><div class="modalBody"><div class="card"><b>Equipped</b><br>${c.equippedMoves.map(id=>MOVES177[id]?.name||id).join(', ')||'Geen'}</div>${rows}<button class="btn alt" onclick="combatCareerHub177()">Terug</button></div>`)};
+  window.combatEquipMove177=function(id){const c=ensureCombat177(); if(!c.unlockedMoves.includes(id))return toast('Move nog niet unlocked.'); if(c.equippedMoves.includes(id)){c.equippedMoves=c.equippedMoves.filter(x=>x!==id)} else {if(c.equippedMoves.length>=4)c.equippedMoves.shift(); c.equippedMoves.push(id)} safeSave(); combatMoveSet177()};
+  window.combatSkillShop177=function(){const c=ensureCombat177(); if(!c.active)return combatStartScreen177(); const shop=availableMoves177().filter(id=>!c.unlockedMoves.includes(id)&&MOVES177[id].price).map(id=>{const mv=MOVES177[id];return `<div class="card"><b>${mv.name}</b><br>${mv.desc}<br>Power ${mv.power} · Cost ${mv.cost} stamina<br>Prijs: ${mv.price} street creds<br><button class="btn" onclick="combatBuyMove177('${id}')">Koop</button></div>`}).join('')||'<div class="card">Je hebt alles voor dit ruleset al unlocked.</div>'; showModal(`<div class="modalTop"><div class="avatar">🧠</div><div class="modalTitle">Skill Shop</div></div><div class="modalBody"><div class="card"><b>Street Creds</b><br>Current balance: ${c.streetCreds}</div>${shop}<button class="btn alt" onclick="combatCareerHub177()">Terug</button></div>`)};
+  window.combatBuyMove177=function(id){const c=ensureCombat177(),mv=MOVES177[id]; if(!mv||!mv.price)return; if((c.streetCreds||0)<mv.price)return toast('Niet genoeg street creds.'); c.streetCreds-=mv.price; if(!c.unlockedMoves.includes(id))c.unlockedMoves.push(id); safeSave(); combatSkillShop177()};
+  window.combatRecoveryScreen177=function(){const c=ensureCombat177(); if(!c.active)return combatStartScreen177(); const inj=(c.injuries||[]).length?(c.injuries||[]).map(x=>'• '+x).join('<br>'):'Geen grote blessures.'; showModal(`<div class="modalTop"><div class="avatar">🩹</div><div class="modalTitle">Recovery / Medical</div></div><div class="modalBody"><div class="card"><b>Injuries</b><br>${inj}</div><button class="btn" onclick="combatRecoveryAction177('rest')">Recharge / Rest</button><button class="btn" onclick="combatRecoveryAction177('therapy')">Physical therapy (€350)</button><button class="btn" onclick="combatRecoveryAction177('surgery')">Surgery (€1500)</button><button class="btn alt" onclick="combatCareerHub177()">Terug</button></div>`)};
+  window.combatRecoveryAction177=function(type){const c=ensureCombat177(); if(type==='rest'){state.stamina=c177((state.stamina||50)+12); c.injuries=(c.injuries||[]).slice(1); closeModal(); action('Recovery','Ik nam tijd om te herstellen. Niet spannend, wel slim.',{Health:4,Stamina:10,Happiness:2},0,'good'); return;} if(type==='therapy'){if((state.money||0)<350)return toast('Niet genoeg geld.'); state.money-=350; c.injuries=(c.injuries||[]).slice(1); state.stats.Health=c177((state.stats.Health||50)+4); closeModal(); action('Physical Therapy','De behandeling maakte me soepeler en stabieler.',{Health:4,Stamina:6},-350,'good'); return;} if(type==='surgery'){if((state.money||0)<1500)return toast('Niet genoeg geld.'); state.money-=1500; c.injuries=[]; state.stats.Health=c177((state.stats.Health||50)+8); closeModal(); action('Surgery','Ik onderging een ingreep en focuste daarna op herstel.',{Health:8,Stamina:-4},-1500,'warn'); return;} };
+  window.combatDopingScreen177=function(){if(state.age<18)return toast('Alleen 18+.'); const c=ensureCombat177(); showModal(`<div class="modalTop"><div class="avatar">💉</div><div class="modalTitle">Steroids / Doping</div></div><div class="modalBody"><div class="card"><b>Risico</b><br>Tijdelijke boost, maar kans op health loss, schorsing en reputatieschade.</div><button class="btn red" onclick="combatUseDoping177()">Neem chemical boost</button><button class="btn alt" onclick="combatCareerHub177()">Terug</button></div>`)};
+  window.combatUseDoping177=function(){const c=ensureCombat177(); c.tempBoost={years:1,power:8,cardio:5}; c.stats.power=c177(c.stats.power+8); c.stats.cardio=c177(c.stats.cardio+5); closeModal(); action('Steroids','Ik gaf mezelf een chemische boost. Het werkte, maar schoon voelde het niet.',{Fitness:2,Health:-4,Happiness:1},0,'warn'); if(Math.random()<0.24){c.suspended=true; addLog('<b>Dopingtest</b><br>Ik liep tegen een dopingtest aan en werd tijdelijk geschorst.','bad',false)} };
+  window.combatRetire177=function(){const c=ensureCombat177(); if(!c.active)return closeModal(); c.active=false; closeModal(); action('Combat Career','Ik hing mijn handschoenen op. De littekens, street creds en herinneringen blijven wel.',{Happiness:2},0,'warn'); };
+  // yearly processing hook
+  const oldAge177=window.ageUp||(typeof ageUp==='function'?ageUp:null);
+  window.ageUp=function(){ if(oldAge177) oldAge177(); try{ const c=ensureCombat177(); if(c.tempBoost&&c.tempBoost.years){ c.tempBoost.years--; if(c.tempBoost.years<=0){ c.stats.power=c177(c.stats.power-8); c.stats.cardio=c177(c.stats.cardio-5); c.tempBoost=null; addLog('<b>Doping uitgewerkt</b><br>De chemische boost trok weg. Mijn lichaam voelde zwaarder dan eerst.','warn',false);} } if(c.suspended){ c.suspended=false; addLog('<b>Schorsing afgelopen</b><br>Ik mocht weer officieel vechten.','good',false);} }catch(e){console.warn('[v17.7 combat year hook]',e)} };
+  try{ageUp=window.ageUp}catch(e){}
+  // menu injection
+  const oldActivities177=window.activitiesHTML||(typeof activitiesHTML==='function'?activitiesHTML:null);
+  window.activitiesHTML=function(){ let h=oldActivities177?oldActivities177():''; if(!h.includes('Combat Career')) h+=`<div class="section">Combat Career</div>${row('🥊','Combat Career','Fight Night, Move Set, Street Creds, coach en rankings','combatCareerHub177()',state.age<16)}`; return h; };
+  try{activitiesHTML=window.activitiesHTML}catch(e){}
+  setTimeout(()=>{try{ensureCombat177();safeSave()}catch(e){}},350);
+})();
+
+
+/* v17.8 Combat UI Polish JS overrides */
+(function(){
+  function c178(v,min=0,max=100){return Math.max(min,Math.min(max,Math.round(v||0)))}
+  function pct178(v,max){return max?Math.max(0,Math.min(100,Math.round((v/max)*100))):0}
+  function safe178(fn,fallback){try{return fn()}catch(e){return fallback||''}}
+  function fighterIcon178(style,you){
+    const s=(style||'').toLowerCase();
+    if(you)return s.includes('submission')?'🥋':s.includes('wrest')?'🤼':s.includes('brawl')?'😤':'🥊';
+    if(s.includes('submission'))return '🥋';
+    if(s.includes('wrest'))return '🤼';
+    if(s.includes('kick'))return '🦵';
+    if(s.includes('counter'))return '👁️';
+    if(s.includes('brawl'))return '😡';
+    return '🥊';
+  }
+  function combatBar178(label,val,max,type){
+    const p=pct178(val,max), low=p<32?' bad':'';
+    return `<div class="combat-barBlock"><div class="combat-barLabel"><span>${label}</span><span>${Math.round(val)}/${Math.round(max)}</span></div><div class="combat-bar"><div class="combat-fill ${type||'hp'}${low}" style="width:${p}%"></div></div></div>`;
+  }
+  function combatHero178(mode){
+    const c=safe178(()=>ensureCombat177(), state.combat||{}), f=window.__fight177;
+    if(!f){
+      return `<div class="combat-hero"><div class="combat-heroTop">Fight Night</div><div class="combat-status">No active fight.</div></div>`;
+    }
+    const oppMaxHp=f.oppMaxHp||Math.max(f.oppHp||100,100+Math.round((f.oppStats?.chin||45)*0.8));
+    const oppMaxStam=f.oppMaxStam||Math.max(f.oppStam||90,90+Math.round((f.oppStats?.cardio||45)*0.9));
+    f.oppMaxHp=oppMaxHp; f.oppMaxStam=oppMaxStam;
+    const last=(f.log||[]).slice(mode==='announce'?-1:-3).join('<br>');
+    return `<div class="combat-hero">
+      <div class="combat-heroTop">Fight Night</div>
+      <div class="combat-vs">
+        <div class="combat-fighter opp">
+          <div class="combat-name">${f.opponent.name}</div>
+          <div class="combat-style">${f.opponent.style} · lvl ${f.opponent.level}${f.opponent.rank?` · #${f.opponent.rank}`:''}</div>
+          <div class="combat-avatar">${fighterIcon178(f.opponent.style,false)}</div>
+          ${combatBar178('HP',f.oppHp,oppMaxHp,'hp')}
+          ${combatBar178('Stamina',f.oppStam,oppMaxStam,'stam')}
+        </div>
+        <div class="combat-fighter you">
+          <div class="combat-name">You</div>
+          <div class="combat-style">${safe178(()=>combatStyleText177(c.style),'Fighter')} · ${c.ruleset==='kickboxing'?'Kickboxing':'MMA'}</div>
+          <div class="combat-avatar">${fighterIcon178(c.style,true)}</div>
+          ${combatBar178('HP',f.playerHp,c.maxHp||120,'hp')}
+          ${combatBar178('Stamina',f.playerStam,c.maxStamina||100,'stam')}
+        </div>
+      </div>
+      <div class="combat-status">${mode==='announce'?`Today's thrilling match is between:<br><b>${state.name} (You)</b><br>&<br><b>${f.opponent.name}</b>`:`<b>Round ${f.round}/${f.maxRounds}</b> · Control: ${f.control||'neutral'}<br>${last}`}</div>
+    </div>`;
+  }
+  function combatStatCard178(){
+    const c=safe178(()=>ensureCombat177(), state.combat||{}), rec=c.record||{};
+    return `<div class="combat-card"><b>My Fighter</b><br>
+      ${safe178(()=>combatStyleText177(c.style),c.style||'Fighter')} · ${c.ruleset==='mma'?'MMA/UFC route':'Kickboxing/GLORY route'} · league ${c.league||'amateur'}${c.belt?' · Champion':''}
+      <div class="combat-badges">
+        <span class="combat-badge green">Record ${rec.wins||0}-${rec.losses||0}</span>
+        <span class="combat-badge gold">Street Creds ${c.streetCreds||0}</span>
+        <span class="combat-badge">${c.rank==null?'Unranked':'#'+c.rank}</span>
+        <span class="combat-badge red">Coach ${c.coachRelation||50}%</span>
+      </div>
+      <div class="combat-statgrid">
+        <div class="combat-stat"><strong>${c.stats?.striking||0}%</strong>Striking</div>
+        <div class="combat-stat"><strong>${c.stats?.wrestling||0}%</strong>Wrestling</div>
+        <div class="combat-stat"><strong>${c.stats?.grappling||0}%</strong>Grappling</div>
+        <div class="combat-stat"><strong>${c.stats?.cardio||0}%</strong>Cardio</div>
+        <div class="combat-stat"><strong>${c.stats?.defense||0}%</strong>Defense</div>
+        <div class="combat-stat"><strong>${c.stats?.fightIQ||0}%</strong>Fight IQ</div>
+      </div>
+    </div>`;
+  }
+  function combatMoveGrid178(){
+    const f=window.__fight177;
+    if(!f)return '';
+    const ids=safe178(()=>legalMoves177(),[]);
+    const buttons=ids.map(id=>{
+      const mv=MOVES177[id]; if(!mv)return '';
+      const locked=safe178(()=>fightMoveDisabled177(id),false)?' locked':'';
+      return `<button class="combat-move${locked}" onclick="${locked?'':`combatUseMove177('${id}')`}">${mv.name}<span>Power ${mv.power} · Cost ${mv.cost}</span></button>`;
+    }).join('');
+    return `<div class="combat-move-grid">${buttons}
+      <button class="combat-move utility" onclick="combatUseMove177('recover')">Recover<span>Stamina terug</span></button>
+      <button class="combat-move utility" onclick="combatUseMove177('defend')">Defend<span>Minder schade</span></button>
+    </div>`;
+  }
+  function combatRow178(icon,title,sub,fn){
+    return `<div class="combat-row" onclick="${fn}"><div class="rIco">${icon}</div><div><div class="rTitle">${title}</div><div class="sub">${sub}</div></div><div class="chev">›</div></div>`;
+  }
+  const oldCombatHub178=window.combatCareerHub177;
+  window.combatCareerHub177=function(){
+    const c=safe178(()=>ensureCombat177(), state.combat||{});
+    showModal(`<div class="modalTop"><div class="avatar">🥊</div><div class="modalTitle">Combat Career</div></div>
+    <div class="modalBody combat-body">
+      ${combatStatCard178()}
+      ${c.active?'':`<div class="combat-card"><b>Start je fighter</b><br>Kies een stijl en ruleset. Daarna unlock je moves, train je met coach en klim je naar UFC/GLORY.</div>`}
+      ${combatRow178('🧬',c.active?'Fighter Setup':'Start Fighter','Style, ruleset en basisprofiel','combatStartScreen177()')}
+      ${combatRow178('🏆','Fight League','Official route, rankings en title fights','combatLeagueScreen177()')}
+      ${combatRow178('🥊','Street Fighting','Street creds verdienen met risico','combatStreetScreen177()')}
+      ${combatRow178('👊','Move Set','Equip maximaal 4 kernmoves','combatMoveSet177()')}
+      ${combatRow178('🧠','Skill Shop','Koop moves met street creds','combatSkillShop177()')}
+      ${combatRow178('🏋️','Training Camp','Striking, wrestling, grappling en cardio','combatTrainingCamp177()')}
+      ${combatRow178('🎯','Coach','Gameplans, private sessions en camps','combatCoachScreen177()')}
+      ${combatRow178('🩹','Recovery','Rest, therapy, surgery en injuries','combatRecoveryScreen177()')}
+      ${state.age>=18?combatRow178('💉','Steroids / Doping','Boost met ban- en health-risico','combatDopingScreen177()'):''}
+      <button class="btn red" onclick="combatRetire177()">🥊 Retire</button>
+      <button class="btn alt" onclick="closeModal()">Terug</button>
+    </div>`);
+  };
+  window.combatFightScreen177=function(){
+    if(!window.__fight177)return;
+    showModal(`<div class="modalTop"><div class="avatar">🥊</div><div class="modalTitle">Fight Night</div></div>
+    <div class="modalBody combat-body">
+      ${combatHero178('fight')}
+      ${combatMoveGrid178()}
+      <button class="btn alt" onclick="combatCareerHub177()">Forfeit / Exit</button>
+    </div>`);
+  };
+  const oldMoveSet178=window.combatMoveSet177;
+  window.combatMoveSet177=function(){
+    const c=safe178(()=>ensureCombat177(), state.combat||{});
+    if(!c.active)return combatStartScreen177();
+    const rows=safe178(()=>availableMoves177(),[]).map(id=>{
+      const mv=MOVES177[id]; if(!mv)return '';
+      const owned=c.unlockedMoves.includes(id), eq=c.equippedMoves.includes(id);
+      return `<div class="combat-shop-item"><b>${mv.name}</b>${eq?' ✅':''}<br>${mv.desc}<br>Power ${mv.power} · Cost ${mv.cost} · Accuracy ${mv.acc}%<br>${owned?`<button class="btn" onclick="combatEquipMove177('${id}')">${eq?'Unequip':'Equip'}</button>`:`<span class="combat-shop-price">Koop in Skill Shop</span>`}</div>`;
+    }).join('');
+    showModal(`<div class="modalTop"><div class="avatar">👊</div><div class="modalTitle">Move Set</div></div><div class="modalBody combat-body"><div class="combat-card"><b>Equipped</b><br>${c.equippedMoves.map(id=>MOVES177[id]?.name||id).join(', ')||'Geen'}</div>${rows}<button class="btn alt" onclick="combatCareerHub177()">Terug</button></div>`);
+  };
+  const oldShop178=window.combatSkillShop177;
+  window.combatSkillShop177=function(){
+    const c=safe178(()=>ensureCombat177(), state.combat||{});
+    if(!c.active)return combatStartScreen177();
+    const shop=safe178(()=>availableMoves177(),[]).filter(id=>!c.unlockedMoves.includes(id)&&MOVES177[id].price).map(id=>{
+      const mv=MOVES177[id];
+      return `<div class="combat-shop-item"><b>${mv.name}</b><br>${mv.desc}<br>Power ${mv.power} · Cost ${mv.cost} stamina<br><span class="combat-shop-price">${mv.price} street creds</span><button class="btn" onclick="combatBuyMove177('${id}')">Koop</button></div>`;
+    }).join('')||'<div class="combat-card">Je hebt alles voor dit ruleset al unlocked.</div>';
+    showModal(`<div class="modalTop"><div class="avatar">🧠</div><div class="modalTitle">Skill Shop</div></div><div class="modalBody combat-body"><div class="combat-card"><b>Street Creds</b><br>Current balance: ${c.streetCreds||0}</div>${shop}<button class="btn alt" onclick="combatCareerHub177()">Terug</button></div>`);
+  };
+  const oldStreet178=window.combatStreetScreen177;
+  window.combatStreetScreen177=function(){
+    const c=safe178(()=>ensureCombat177(), state.combat||{});
+    if(!c.active)return combatStartScreen177();
+    window.__streetList177=safe178(()=>opponentPool177('street',c.ruleset),[]);
+    const cards=window.__streetList177.map((o,i)=>combatRow178('🥊',o.name,`${o.style} · lvl ${o.level} · reward street creds`,`combatStreetStart177(${i})`)).join('');
+    showModal(`<div class="modalTop"><div class="avatar">🥊</div><div class="modalTitle">Street Fighting</div></div><div class="modalBody combat-body"><div class="combat-card">Street fights leveren street creds en harde ervaring op, maar ook blessure- en legal risico.</div>${cards}<button class="btn alt" onclick="combatCareerHub177()">Terug</button></div>`);
+  };
+  // Wrap announcement by intercepting active fight after original start functions created it.
+  const oldStreetStart178=window.combatStreetStart177;
+  if(oldStreetStart178){
+    window.combatStreetStart177=function(i){oldStreetStart178(i); setTimeout(()=>{if(window.__fight177){showModal(`<div class="modalTop"><div class="avatar">🥊</div><div class="modalTitle">Fight Night</div></div><div class="modalBody combat-body">${combatHero178('announce')}<button class="btn green" onclick="combatFightScreen177()">Let's get it on!</button><button class="btn alt" onclick="combatCareerHub177()">Terug</button></div>`) }},0)};
+  }
+  const oldLeagueStart178=window.combatLeagueStart177;
+  if(oldLeagueStart178){
+    window.combatLeagueStart177=function(type){oldLeagueStart178(type); setTimeout(()=>{if(window.__fight177){showModal(`<div class="modalTop"><div class="avatar">🥊</div><div class="modalTitle">Fight Night</div></div><div class="modalBody combat-body">${combatHero178('announce')}<button class="btn green" onclick="combatFightScreen177()">Let's get it on!</button><button class="btn alt" onclick="combatCareerHub177()">Terug</button></div>`) }},0)};
+  }
+  try{combatCareerHub177=window.combatCareerHub177;combatFightScreen177=window.combatFightScreen177;combatMoveSet177=window.combatMoveSet177;combatSkillShop177=window.combatSkillShop177;combatStreetScreen177=window.combatStreetScreen177}catch(e){}
 })();
