@@ -111,3 +111,10 @@ Deze versie scheidt werk logisch:
 - Tijdindeling rekent school/studie, bijbaan, werk, sport en business mee.
 - Te veel verplichtingen geven stress/stamina/health/schoolfocus penalties.
 - Career Hub heeft nu aparte knoppen voor Bijbaan, Stage/leerwerk, Gewone baan en Carrièrebaan.
+
+
+## v17.9 Side Job Display Fix
+- Life tab Career toont nu ook bijbanen zoals krantenbezorger.
+- Bijbaan en gewone baan worden gecombineerd weergegeven als beide actief zijn.
+- Oude sideJob saves worden genormaliseerd met title, weeklyHours en type.
+- Career-menu krijgt een extra werkstatus-card wanneer er een bijbaan actief is.

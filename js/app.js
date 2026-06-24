@@ -12337,3 +12337,107 @@ loadGame();
   }
   try{combatCareerHub177=window.combatCareerHub177;combatFightScreen177=window.combatFightScreen177;combatMoveSet177=window.combatMoveSet177;combatSkillShop177=window.combatSkillShop177;combatStreetScreen177=window.combatStreetScreen177}catch(e){}
 })();
+
+/* v17.9 Side Job Display Fix */
+(function(){
+  function sideJobName179(){
+    try{
+      const sj=state&&state.sideJob;
+      if(!sj)return '';
+      return sj.title||sj.name||sj.jobTitle||sj.id||'Bijbaan';
+    }catch(e){return ''}
+  }
+  function normalJobName179(){
+    try{
+      const j=state&&state.job;
+      if(!j)return '';
+      return j.title||j.name||j.jobTitle||j.id||'Baan';
+    }catch(e){return ''}
+  }
+  window.careerSummary179=function(){
+    const normal=normalJobName179();
+    const side=sideJobName179();
+    if(normal && side)return normal+' + bijbaan '+side;
+    if(normal)return normal;
+    if(side)return 'Bijbaan: '+side;
+    return 'Geen baan';
+  };
+
+  const oldLifeHTML179=window.lifeHTML||(typeof lifeHTML==='function'?lifeHTML:null);
+  if(oldLifeHTML179){
+    window.lifeHTML=function(){
+      let h=oldLifeHTML179();
+      try{
+        const summary=window.careerSummary179();
+        const side=sideJobName179();
+        if(side){
+          h=h.replace(/(<div class="rTitle">Career<\/div><div class="sub">)[^<]*(<\/div>)/, '$1'+summary+'$2');
+        }else{
+          h=h.replace(/(<div class="rTitle">Career<\/div><div class="sub">)Geen baan(<\/div>)/, '$1'+summary+'$2');
+        }
+      }catch(e){}
+      return h;
+    };
+    try{lifeHTML=window.lifeHTML}catch(e){}
+  }
+
+  window.careerStatusLine179=function(){
+    const summary=window.careerSummary179?window.careerSummary179():'Geen baan';
+    const sj=state&&state.sideJob;
+    const j=state&&state.job;
+    let extra=[];
+    if(sj)extra.push('Bijbaan: '+(sj.title||sj.name||sj.id||'Bijbaan')+(sj.weeklyHours?' · '+sj.weeklyHours+' uur/week':''));
+    if(j)extra.push('Baan: '+(j.title||j.name||j.id||'Baan')+(j.weeklyHours?' · '+j.weeklyHours+' uur/week':''));
+    return '<div class="card"><b>Werkstatus</b><br>'+summary+(extra.length?'<br>'+extra.join('<br>'):'')+'</div>';
+  };
+
+  ['careerHub176','careerHub175','careerScreen','workScreen','careerHub'].forEach(function(fn){
+    const old=window[fn];
+    if(typeof old==='function' && !old.__sideJobFix179){
+      const wrapped=function(){
+        old();
+        setTimeout(function(){
+          try{
+            const modal=document.getElementById('modal');
+            if(!modal||!sideJobName179())return;
+            if(modal.innerHTML.includes('Bijbaan:'))return;
+            const body=modal.querySelector('.modalBody');
+            if(body)body.insertAdjacentHTML('afterbegin', window.careerStatusLine179());
+          }catch(e){}
+        },0);
+      };
+      wrapped.__sideJobFix179=true;
+      window[fn]=wrapped;
+      try{ if(typeof globalThis[fn]!=='undefined') globalThis[fn]=wrapped; }catch(e){}
+    }
+  });
+
+  const oldMigrate179=window.migrate||(typeof migrate==='function'?migrate:null);
+  if(oldMigrate179 && !oldMigrate179.__sideJobFix179){
+    window.migrate=function(s){
+      s=oldMigrate179(s);
+      try{
+        if(s.sideJob){
+          s.sideJob.title=s.sideJob.title||s.sideJob.name||s.sideJob.jobTitle||s.sideJob.id||'Bijbaan';
+          s.sideJob.weeklyHours=s.sideJob.weeklyHours||s.sideJob.hours||4;
+          s.sideJob.type='side_job';
+        }
+      }catch(e){}
+      return s;
+    };
+    window.migrate.__sideJobFix179=true;
+    try{migrate=window.migrate}catch(e){}
+  }
+
+  setTimeout(function(){
+    try{
+      if(state&&state.sideJob){
+        state.sideJob.title=state.sideJob.title||state.sideJob.name||state.sideJob.jobTitle||state.sideJob.id||'Bijbaan';
+        state.sideJob.weeklyHours=state.sideJob.weeklyHours||state.sideJob.hours||4;
+        state.sideJob.type='side_job';
+        safeSave();
+        render();
+      }
+    }catch(e){}
+  },300);
+})();
