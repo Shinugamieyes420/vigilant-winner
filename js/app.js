@@ -12441,3 +12441,247 @@ loadGame();
     }catch(e){}
   },300);
 })();
+
+
+/* v18.0 Vacation Router + Item System Update */
+(function(){
+  function r180(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+  function c180(v,min=0,max=100){return Math.max(min,Math.min(max,Math.round(v||0)))}
+  function m180(v){try{return money(v)}catch(e){return '€ '+Math.round(v||0).toLocaleString('nl-NL')}}
+  function stat180(obj){try{applyStats(obj)}catch(e){for(const k in obj){if(k==='Fitness')state.fitness=c180((state.fitness||50)+obj[k]);else if(k==='Stamina')state.stamina=c180((state.stamina||50)+obj[k]);else state.stats[k]=c180((state.stats[k]||50)+obj[k]);}}}
+  function msg180(title,text,stats,cash,type){if(cash)state.money=(state.money||0)+cash;if(stats)stat180(stats);try{addLog('<b>'+title+'</b><br>'+text,type||'good',false)}catch(e){}try{showModal('<div class="modalTop"><div class="avatar">🌍</div><div class="modalTitle">'+title+'</div></div><div class="modalBody"><p>'+text+'</p><button class="btn" onclick="closeModal()">Verder</button></div>')}catch(e){try{toast(title)}catch(_){}}try{safeSave();render()}catch(e){}}
+  function norm180(x){x=(x||'').toString().toLowerCase();if(['usa','us','america','united_states','united states','amerika'].includes(x))return 'america';if(['japan','tokyo'].includes(x))return 'japan';if(['spain','spanje','alkmaar','malaga','barcelona','madrid'].includes(x))return 'spain';if(['amsterdam'].includes(x))return 'amsterdam';if(['jamaica','kingston'].includes(x))return 'jamaica';if(['nightcity','night_city','night city','nc'].includes(x))return 'nightcity';if(['enkhuizen','nl','netherlands','nederland','normal','home'].includes(x))return 'enkhuizen';return x||'enkhuizen'}
+  window.currentPlace180=function(){return state.vacation?norm180(state.vacation):norm180(state.world||state.city||state.placeId||'enkhuizen')};
+  window.travelMode180=function(){return state.vacation?'vacation':'resident'};
+  window.isInPlace180=function(place){place=norm180(place);return norm180(state.vacation)===place||norm180(state.world)===place||norm180(state.city)===place||norm180(state.placeId)===place};
+  function normalizeSave180(){if(state.vacation)state.vacation=norm180(state.vacation);if(state.world)state.world=norm180(state.world);if(state.city)state.city=norm180(state.city);if(state.placeId)state.placeId=norm180(state.placeId);if(state.homePlaceId)state.homePlaceId=norm180(state.homePlaceId);if(state.homeWorldBeforeVacation)state.homeWorldBeforeVacation=norm180(state.homeWorldBeforeVacation)}
+  function high180(){return !!(state.addiction&&(state.addiction.underInfluence||state.addiction.weedTrip||state.addiction.high||state.addiction.stoned))}
+  function canTravel180(){return high180()?'Je bent onder invloed. Eerst uitrusten/ontnuchteren voordat je reist.':true}
+  window.soberUp180=function(){state.addiction=state.addiction||{};['underInfluence','weedTrip','high','stoned'].forEach(k=>state.addiction[k]=false);msg180('Uitrusten / ontnuchteren','Ik nam rust, dronk water en werd weer helder genoeg om veilig te reizen.',{Health:1,Stamina:8,Happiness:1},0,'good')};
+  function setVacation180(place,cost){place=norm180(place);let ok=canTravel180();if(ok!==true)return toast(ok);if(state.vacation)return toast('Je bent al op vakantie. Keer eerst terug naar huis.');if((state.money||0)<(cost||0))return toast('Niet genoeg geld: '+m180(cost||0));state.homeWorldBeforeVacation=state.world||state.city||state.placeId||'enkhuizen';state.vacation=place;state.money-=cost||0;msg180('Vakantie','Ik vertrok naar '+label180(place)+'. Vacation mode staat aan: alle acties lopen via de werkende vakantiehub.',{Happiness:4,Stamina:-4},0,'good')}
+  window.travelAmerica180=function(){setVacation180('america',3600)};window.travelJapan180=function(){setVacation180('japan',2800)};window.travelAmsterdam180=function(){setVacation180('amsterdam',120)};window.travelJamaica180=function(){setVacation180('jamaica',1800)};window.travelNightCity180=function(){setVacation180('nightcity',1200)};window.travelSpain180=function(){setVacation180('spain',1300)};window.travelAlkmaar180=window.travelSpain180;
+  window.returnHome180=function(){let ok=canTravel180();if(ok!==true)return toast(ok);if(!state.vacation)return toast('Je bent niet op vakantie.');let from=state.vacation;state.vacation=null;state.world=state.homeWorldBeforeVacation||state.world||'enkhuizen';state.placeId=state.world;msg180('Terug naar huis','Ik kwam terug van '+label180(from)+'. Vakantie voorbij; mijn vaste woonplaats is weer '+label180(state.world)+'.',{Stamina:-2,Happiness:1},0,'good')};
+  function label180(p){return {america:'Amerika / USA',japan:'Japan / Tokyo',amsterdam:'Amsterdam',jamaica:'Jamaica',nightcity:'Night City',spain:'Spanje',enkhuizen:'Enkhuizen'}[norm180(p)]||p}
+
+  const A180={};
+  function addA(place,id,icon,title,mode,age,cost,desc,run){place=norm180(place);A180[place]=A180[place]||[];A180[place].push({id,icon,title,mode,age,cost,desc,run})}
+  addA('america','diner','🍔','American Diner','vacation',0,35,'Burger, refill en USA sfeer.',()=>msg180('American Diner','Ik at in een Amerikaanse diner. Veel te groot, veel te vet, maar precies de vibe.',{Happiness:5,Health:-1},-35,'good'));
+  addA('america','roadtrip','🛣️','Texas Roadtrip','vacation',16,320,'Roadtrip door Texas.',()=>msg180('Texas Roadtrip','Ik maakte een roadtrip door Texas. Alles was groter: wegen, porties, ego’s en verhalen.',{Happiness:8,Looks:1,Stamina:-9},-320,'good'));
+  addA('america','ufc_gym','🥊','UFC Gym Visit','both',16,160,'Train bij een Amerikaanse fight gym.',()=>{state.skills=state.skills||{};state.skills.combat=(state.skills.combat||0)+r180(2,5);if(state.combat&&state.combat.stats){state.combat.stats.striking=c180((state.combat.stats.striking||35)+r180(1,4));state.combat.stats.cardio=c180((state.combat.stats.cardio||35)+r180(1,3))}msg180('UFC Gym Visit','Ik trainde in een Amerikaanse UFC gym. De sparring was hard, maar ik leerde meteen.',{Fitness:3,Stamina:-6,Health:-1},-160,'good')});
+  addA('america','wwe_pc','🤼','WWE Performance Center Tour','both',16,220,'Wrestling scouting, promo en ringgevoel.',()=>{state.skills=state.skills||{};state.skills.wrestling=(state.skills.wrestling||0)+r180(2,5);if(state.wrestling){state.wrestling.promo=c180((state.wrestling.promo||0)+r180(1,4));state.wrestling.ringIQ=c180((state.wrestling.ringIQ||0)+r180(1,3))}msg180('WWE Performance Center','Ik bezocht het WWE Performance Center. Zelfs de rondleiding voelde als een try-out.',{Fitness:2,Happiness:5,Stamina:-4},-220,'good')});
+  addA('america','hollywood','🎬','Hollywood Sightseeing','vacation',0,180,'Fame/social moment in Hollywood.',()=>{state.social=(state.social||0)+r180(15,80);msg180('Hollywood','Ik liep door Hollywood en maakte content alsof ik al beroemd was.',{Happiness:6,Looks:2},-180,'good')});
+  addA('america','sports','🏟️','Live Sports Game','vacation',0,140,'NFL/NBA/MLS event-vibe.',()=>msg180('Live Sports','Ik bezocht een live sports game. De show eromheen was bijna groter dan de wedstrijd zelf.',{Happiness:7,Smarts:1,Stamina:-3},-140,'good'));
+  addA('america','pitch','💼','Business Pitch Event','resident',18,900,'Alleen wonen: netwerk en business-kans.',()=>{state.businesses=state.businesses||[];if(Math.random()<.52){state.businesses.push({name:'USA Side Hustle',type:'startup',city:'america',level:1,reputation:22,customers:12,quality:25,marketing:22,monthlyRevenue:650,monthlyCosts:420,risk:25,debt:0});msg180('Business Pitch','Mijn pitch kreeg tractie. Ik startte een kleine USA side hustle.',{Smarts:3,Happiness:6},-900,'good')}else msg180('Business Pitch','Mijn pitch werd vriendelijk afgeserveerd. Wel netwerk, geen deal.',{Smarts:2,Happiness:-2},-900,'warn')});
+
+  addA('japan','ramen','🍜','Ramen Shop','vacation',0,28,'Eten, sfeer en happiness.',()=>msg180('Ramen Shop','Ik at ramen in Japan. Simpel, warm en precies goed na een lange dag.',{Happiness:5,Health:1},-28,'good'));
+  addA('japan','arcade','🕹️','Tokyo Arcade','vacation',0,55,'Gaming en social.',()=>{state.social=(state.social||0)+r180(4,18);msg180('Tokyo Arcade','Ik verdween in een arcade vol licht, geluid en fanatieke spelers.',{Happiness:7,Smarts:1,Stamina:-3},-55,'good')});
+  addA('japan','language','📚','Japanse taalles','both',12,120,'Smarts en Japan-route.',()=>{state.skills=state.skills||{};state.skills.japanese=(state.skills.japanese||0)+r180(5,12);msg180('Japanse taalles','Ik leerde basiszinnen en merkte hoe anders de cultuur werkt.',{Smarts:4,Stamina:-2},-120,'good')});
+  addA('japan','dojo','🥋','Dojo Training','both',12,160,'Discipline, combat en fitness.',()=>{state.skills=state.skills||{};state.skills.combat=(state.skills.combat||0)+r180(2,5);if(state.combat&&state.combat.stats){state.combat.stats.grappling=c180((state.combat.stats.grappling||35)+r180(1,3));state.combat.stats.fightIQ=c180((state.combat.stats.fightIQ||35)+r180(1,3))}msg180('Dojo Training','Ik trainde in een dojo. Minder show, meer discipline.',{Fitness:3,Smarts:2,Stamina:-5},-160,'good')});
+  addA('japan','shibuya','🌃','Shibuya Night Walk','vacation',14,60,'Looks/social/fame moment.',()=>{state.social=(state.social||0)+r180(10,35);msg180('Shibuya Night Walk','Ik liep door Shibuya tussen neon, drukte en eindeloze energie.',{Happiness:6,Looks:2,Stamina:-4},-60,'good')});
+  addA('japan','workculture','🏢','Werkcultuur netwerk','resident',18,220,'Alleen wonen: job/netwerk route.',()=>msg180('Werkcultuur Japan','Ik bouwde netwerk op in Japan. De lat lag hoog, maar het gaf kansen.',{Smarts:3,Happiness:-1},-220,'good'));
+
+  addA('spain','tapas','🥘','Tapas avond','vacation',0,45,'Eten, sfeer en happiness.',()=>msg180('Tapas avond','Ik at tapas in Spanje. Kleine bordjes, grote vibe.',{Happiness:6,Health:1},-45,'good'));
+  addA('spain','beach','🏖️','Costa del Sol Beach Day','vacation',0,35,'Strand, herstel en zon.',()=>msg180('Stranddag Spanje','Ik lag aan het strand en kwam eindelijk een beetje tot rust.',{Happiness:8,Health:2,Stamina:5},-35,'good'));
+  addA('spain','football','⚽','La Liga wedstrijd','vacation',0,110,'Voetbalsfeer en inspiratie.',()=>{state.football=state.football||{};state.football.form=c180((state.football.form||50)+r180(2,6));msg180('La Liga wedstrijd','Ik voelde de Spaanse voetbalsfeer. Techniek, tempo en drama tegelijk.',{Happiness:7,Fitness:1,Smarts:1},-110,'good')});
+  addA('spain','spanish','📚','Spaanse taalles','both',12,90,'Taal en smarts.',()=>{state.skills=state.skills||{};state.skills.spanish=(state.skills.spanish||0)+r180(5,12);msg180('Spaanse taalles','Ik leerde Spaanse zinnen en kon eindelijk meer zeggen dan hola.',{Smarts:4,Stamina:-1},-90,'good')});
+  addA('spain','flamenco','💃','Flamenco night','vacation',14,75,'Cultuur, social en looks.',()=>{state.social=(state.social||0)+r180(8,28);msg180('Flamenco night','De flamenco avond had vuur, ritme en veel meer emotie dan verwacht.',{Happiness:7,Looks:1,Stamina:-4},-75,'good')});
+  addA('spain','tourismjob','🏨','Tourism network','resident',18,120,'Alleen wonen: horeca/toerisme netwerk.',()=>msg180('Tourism network','Ik bouwde netwerk op in Spaanse horeca en toerisme. Niet rijk, wel kansen.',{Smarts:2,Happiness:2},-120,'good'));
+
+  addA('amsterdam','canal','🌉','Canal Walk','vacation',0,0,'Gratis city vibe.',()=>msg180('Amsterdam Walk','Ik liep langs de grachten. Druk, mooi en een beetje chaotisch.',{Happiness:4,Stamina:-2},0,'good'));
+  addA('amsterdam','museum','🖼️','Museumdag','vacation',0,65,'Cultuur en smarts.',()=>msg180('Museumdag','Ik bezocht musea en deed alsof ik alles begreep. Een deel bleef hangen.',{Smarts:4,Happiness:3,Stamina:-3},-65,'good'));
+  addA('amsterdam','festival','🎪','Festival / event','vacation',16,120,'Social/fame maar vermoeiend.',()=>{state.social=(state.social||0)+r180(15,55);msg180('Festival','Ik ging naar een Amsterdams event. Veel mensen, veel muziek, weinig energie over.',{Happiness:8,Looks:1,Stamina:-10},-120,'good')});
+  addA('amsterdam','media','📸','Media netwerkborrel','resident',18,90,'Alleen wonen: media/business netwerk.',()=>msg180('Media netwerk','Ik sprak mensen uit media en creatieve business. Eén contact voelde waardevol.',{Smarts:2,Looks:1},-90,'good'));
+
+  addA('jamaica','beach','🏖️','Beach Day','vacation',0,40,'Rust en herstel.',()=>msg180('Beach Day','Ik lag op het strand en liet mijn hoofd eindelijk even uit staan.',{Happiness:9,Health:2,Stamina:4},-40,'good'));
+  addA('jamaica','reggae','🎸','Reggae Night','vacation',16,75,'Music/social vibe.',()=>{state.social=(state.social||0)+r180(8,30);msg180('Reggae Night','De reggae avond had meer ritme dan mijn hele week.',{Happiness:8,Stamina:-4},-75,'good')});
+  addA('jamaica','market','🛍️','Local Market','vacation',0,55,'Souvenir en local vibe.',()=>{giveItem180('jamaica_souvenir');msg180('Local Market','Ik kocht een souvenir op de markt. Niet duur, wel herinnering.',{Happiness:3},-55,'good')});
+
+  addA('nightcity','neon','🌃','Neon Walk','vacation',16,30,'Street cred maar danger.',()=>{state.nc=state.nc||{};state.nc.streetCred=c180((state.nc.streetCred||0)+r180(1,3));msg180('Neon Walk','Ik liep door Night City. Elke straat voelde als kans én waarschuwing.',{Happiness:4,Smarts:1,Stamina:-5},-30,'warn')});
+  addA('nightcity','fixer','🕶️','Meet Fixer','both',18,120,'Risky klus/netwerk.',()=>{state.nc=state.nc||{};state.nc.streetCred=c180((state.nc.streetCred||0)+r180(2,6));state.nc.heat=c180((state.nc.heat||0)+r180(1,5));msg180('Fixer Meet','Ik sprak een fixer. Geen vragen, alleen risico en beloning.',{Smarts:2,Happiness:1},-120,'warn')});
+  addA('nightcity','clinic','🦾','Cyber Clinic','resident',18,800,'Alleen wonen: cyberware route.',()=>{state.nc=state.nc||{};state.nc.cyberware=c180((state.nc.cyberware||0)+r180(3,8));state.nc.humanity=c180((state.nc.humanity||100)-r180(2,7));msg180('Cyber Clinic','De kliniek rook naar metaal en slechte keuzes. Mijn cyberware ging omhoog.',{Fitness:2,Health:-2},-800,'warn')});
+  Object.keys(A180).forEach(place=>addA(place,'return','✈️','Terug naar huis','vacation',0,0,'Vakantie afsluiten.',()=>returnHome180()));
+
+  function deny180(a){let mode=travelMode180();if(state.age<(a.age||0))return 'vanaf '+a.age;if(a.mode==='vacation'&&mode!=='vacation')return 'alleen vakantie';if(a.mode==='resident'&&mode!=='resident')return 'alleen wonen';if((state.money||0)<(a.cost||0))return 'te weinig geld';return ''}
+  window.runVacationAction180=function(place,id){normalizeSave180();place=norm180(place);if(!isInPlace180(place))return toast('Je bent niet in '+label180(place)+'.');let a=(A180[place]||[]).find(x=>x.id===id);if(!a)return toast('Deze actie bestaat niet.');let d=deny180(a);if(d)return toast(d);if(id==='return'){let ok=canTravel180();if(ok!==true)return toast(ok)}a.run()};
+  function rowV180(place,a){let d=deny180(a);let onclick=d?'':`runVacationAction180('${place}','${a.id}')`;return `<div class="vac-row ${d?'locked':''}" onclick="${onclick}"><div class="rIco">${a.icon}</div><div><div class="rTitle">${a.title}</div><div class="sub">${a.desc}${a.cost?' · '+m180(a.cost):''}${d?' · '+d:''}</div></div><div class="chev">›</div></div>`}
+  window.vacationHub180=function(place){normalizeSave180();place=norm180(place||currentPlace180());if(!isInPlace180(place))return toast('Je bent niet in '+label180(place)+'.');let mode=travelMode180();showModal('<div class="modalTop"><div class="avatar">🌍</div><div class="modalTitle">'+label180(place)+'</div></div><div class="modalBody combat-body"><div class="place-card"><b>'+label180(place)+' '+(mode==='vacation'?'Vacation':'Resident')+' Mode</b><br>'+(mode==='vacation'?'Tijdelijke vakantie-opties werken hier. Wonen/business/jobbaan opties blijven resident-only.':'Je woont hier: resident opties werken; vakantie-acties zijn gelocked.')+'<div class="place-badges"><span class="place-badge good">'+place+'</span><span class="place-badge warn">'+mode+'</span>'+(high180()?'<span class="place-badge warn">onder invloed: reizen geblokkeerd</span>':'')+'</div></div>'+((A180[place]||[]).map(a=>rowV180(place,a)).join(''))+(high180()?'<button class="btn" onclick="soberUp180()">💧 Uitrusten / ontnuchteren</button>':'')+'<button class="btn alt" onclick="closeModal()">Terug</button></div>')};
+  window.usaHub180=()=>vacationHub180('america');window.japanHub180=()=>vacationHub180('japan');window.amsterdamHub180=()=>vacationHub180('amsterdam');window.jamaicaHub180=()=>vacationHub180('jamaica');window.nightCityVacationHub180=()=>vacationHub180('nightcity');window.spainHub180=()=>vacationHub180('spain');window.alkmaarHub180=window.spainHub180;
+  ['americaVacationScreen','usaVacationScreen','americaHub','usaHub','showAmerica','showUSA','usaActions','americaActions'].forEach(fn=>{window[fn]=window.usaHub180;try{globalThis[fn]=window.usaHub180}catch(e){}});
+  ['japanVacationScreen','tokyoVacationScreen','japanHub','tokyoHub','showJapan','showTokyo','japanActions','tokyoActions'].forEach(fn=>{window[fn]=window.japanHub180;try{globalThis[fn]=window.japanHub180}catch(e){}});
+  ['amsterdamVacationScreen','amsterdamHub','showAmsterdam','amsterdamActions'].forEach(fn=>{window[fn]=window.amsterdamHub180;try{globalThis[fn]=window.amsterdamHub180}catch(e){}});
+  ['jamaicaVacationScreen','jamaicaHub','showJamaica','jamaicaActions'].forEach(fn=>{window[fn]=window.jamaicaHub180;try{globalThis[fn]=window.jamaicaHub180}catch(e){}});
+  ['nightCityVacationScreen','ncVacationScreen','nightCityHub','showNightCityVacation'].forEach(fn=>{window[fn]=window.nightCityVacationHub180;try{globalThis[fn]=window.nightCityVacationHub180}catch(e){}});
+  ['spainVacationScreen','spainHub','showSpain','spainActions','alkmaarVacationScreen','showAlkmaar','alkmaarActions'].forEach(fn=>{window[fn]=window.spainHub180;try{globalThis[fn]=window.spainHub180}catch(e){}});
+
+  const ITEM2_180=[
+    {id:'basic_bike',name:'Oude fiets',icon:'🚲',cat:'Daily Life',price:90,minAge:6,places:['enkhuizen','amsterdam'],dur:70,actions:['use','sell'],effects:{Stamina:1},use:'Ik pakte de fiets. Niet luxe, wel vrijheid.'},
+    {id:'ebike',name:'E-bike',icon:'🚴',cat:'Daily Life',price:1800,minAge:16,places:['amsterdam','spain'],dur:85,actions:['use','sell','repair'],effects:{Happiness:3,Stamina:4},use:'Ik reed op de e-bike alsof tegenwind niet meer bestond.'},
+    {id:'school_laptop',name:'School laptop',icon:'💻',cat:'School & Work',price:650,minAge:12,places:['all'],dur:85,actions:['study','freelance','sell','repair'],effects:{Smarts:4},use:'Ik gebruikte mijn laptop voor school, werk en afleiding.'},
+    {id:'pro_laptop',name:'Pro laptop',icon:'💻',cat:'Tech',price:1850,minAge:16,places:['all'],dur:90,actions:['study','freelance','sell','repair'],effects:{Smarts:6,Happiness:2},use:'De pro laptop maakte studie en freelance werk makkelijker.'},
+    {id:'gaming_console',name:'Game console',icon:'🎮',cat:'Gaming',price:520,minAge:8,places:['all'],dur:85,actions:['play','stream','sell','repair'],effects:{Happiness:5},use:'Ik speelde games en vergat even de rest van het leven.'},
+    {id:'gaming_pc2',name:'High-end gaming pc',icon:'🖥️',cat:'Gaming',price:2400,minAge:13,places:['all'],dur:88,actions:['play','stream','freelance','sell','repair'],effects:{Happiness:7,Smarts:2},use:'De gaming pc opende online vrienden, streaming en creatieve projecten.'},
+    {id:'camera_gear',name:'Camera gear',icon:'📷',cat:'Media',price:900,minAge:13,places:['amsterdam','america','japan','spain'],dur:80,actions:['content','freelance','sell','repair'],effects:{Looks:1,Smarts:2},use:'Ik maakte content met echte kwaliteit.'},
+    {id:'fitness_set2',name:'Thuis fitness set',icon:'🏋️',cat:'Sports',price:700,minAge:12,places:['all'],dur:90,actions:['train','sell','repair'],effects:{Fitness:5,Health:2},use:'Ik trainde thuis zonder excuses over reistijd.'},
+    {id:'football_boots',name:'Voetbalschoenen',icon:'⚽',cat:'Sports',price:140,minAge:6,places:['all'],dur:75,actions:['train_football','sell','repair'],effects:{Fitness:2},use:'Met goede schoenen voelde elke sprint serieuzer.'},
+    {id:'mma_gloves',name:'MMA gloves',icon:'🥊',cat:'Combat Gear',price:120,minAge:16,places:['america','amsterdam','japan','nightcity'],dur:75,actions:['train_combat','sell','repair'],effects:{Fitness:2},use:'Ik trainde striking met handschoenen die niet uit elkaar vielen.'},
+    {id:'grappling_dummy',name:'Grappling dummy',icon:'🥋',cat:'Combat Gear',price:480,minAge:16,places:['america','japan','nightcity'],dur:88,actions:['train_grappling','sell','repair'],effects:{Fitness:2,Smarts:1},use:'Ik drillde grappling zonder iemands nek te slopen.'},
+    {id:'designer_jacket',name:'Designer jacket',icon:'🧥',cat:'Style',price:950,minAge:16,places:['amsterdam','america','japan','spain'],dur:80,actions:['wear','content','sell','repair'],effects:{Looks:6,Happiness:2},use:'De jacket gaf direct meer stijl dan mijn bankrekening prettig vond.'},
+    {id:'tokyo_jacket',name:'Tokyo streetwear jacket',icon:'🧥',cat:'Local Specials',price:620,minAge:13,places:['japan'],dur:82,actions:['wear','content','sell','repair'],effects:{Looks:5,Happiness:3},use:'De Tokyo streetwear paste perfect bij neon.'},
+    {id:'spain_jersey',name:'Spaans voetbalshirt',icon:'🇪🇸',cat:'Local Specials',price:95,minAge:6,places:['spain'],dur:90,actions:['wear','train_football','sell'],effects:{Happiness:3,Fitness:1},use:'Het Spaanse voetbalshirt gaf meteen toernooivibes.'},
+    {id:'flamenco_guitar',name:'Flamenco gitaar',icon:'🎸',cat:'Music',price:430,minAge:10,places:['spain'],dur:82,actions:['practice','content','sell','repair'],effects:{Happiness:4,Smarts:1},use:'Ik oefende flamenco. Mijn vingers protesteerden, maar het klonk steeds beter.'},
+    {id:'ufc_gloves_signed',name:'Signed UFC glove',icon:'🥊',cat:'Collectibles',price:1200,minAge:16,places:['america'],dur:100,actions:['display','sell'],effects:{Happiness:3},use:'Ik zette de gesigneerde glove neer alsof ik zelf main-card was.'},
+    {id:'samurai_mask',name:'Samurai mask',icon:'👺',cat:'Collectibles',price:900,minAge:12,places:['japan'],dur:100,actions:['display','sell'],effects:{Happiness:3,Smarts:1},use:'Het samurai masker gaf mijn kamer direct meer verhaal.'},
+    {id:'nightcity_mask',name:'Night City street mask',icon:'😷',cat:'Local Specials',price:350,minAge:16,places:['nightcity'],dur:70,actions:['wear','sell','repair'],effects:{Looks:2},use:'De street mask voelde in Night City als noodzaak.'},
+    {id:'cyberdeck',name:'Cyberdeck',icon:'💽',cat:'Night City Tech',price:2400,minAge:18,places:['nightcity'],dur:80,actions:['freelance','content','sell','repair'],effects:{Smarts:6},use:'De cyberdeck maakte digitale klussen mogelijk die ik beter niet hardop uitlegde.'},
+    {id:'jamaica_souvenir',name:'Jamaica souvenir',icon:'🏝️',cat:'Collectibles',price:55,minAge:0,places:['jamaica'],dur:100,actions:['display','sell'],effects:{Happiness:2},use:'Het souvenir bracht de vakantievibe terug.'}
+  ];
+  window.ITEM2_180=ITEM2_180;
+  window.giveItem180=function(id){let d=ITEM2_180.find(x=>x.id===id);if(!d)return false;state.items=state.items||[];state.items.push({id:d.id,name:d.name,icon:d.icon,cat:d.cat,price:d.price,value:d.price,durability:d.dur||100,broken:false,createdAge:state.age,source:'v18'});safeSave();render();return true};
+  function itemDeny180(d){let place=currentPlace180();if(state.age<(d.minAge||0))return 'vanaf '+d.minAge;if(d.places&&!(d.places.includes('all')||d.places.includes(place)))return 'alleen in '+d.places.join('/');if((state.money||0)<d.price)return 'te weinig geld';return ''}
+  window.itemShop180=function(cat){normalizeSave180();let cats=[...new Set(ITEM2_180.map(x=>x.cat))];cat=cat||cats[0];let tabs=cats.map(c=>`<button class="btn ${c===cat?'green':'alt'}" onclick="itemShop180('${c}')">${c}</button>`).join('');let items=ITEM2_180.filter(x=>x.cat===cat).map(d=>{let deny=itemDeny180(d);let buy=deny?'':`buyItem180('${d.id}')`;let effects=d.effects?Object.keys(d.effects).map(k=>k+' '+(d.effects[k]>0?'+':'')+d.effects[k]).join(' · '):'effect';return `<div class="item2-card"><b>${d.icon} ${d.name}</b><br>${d.cat} · ${m180(d.price)}<br>Leeftijd: ${(d.minAge||0)}+ · Locatie: ${(d.places||['all']).join(', ')}<div class="item2-badges"><span class="item2-badge">${effects}</span>${deny?`<span class="item2-badge warn">${deny}</span>`:`<span class="item2-badge good">beschikbaar</span>`}</div><button class="btn ${deny?'locked':''}" onclick="${buy}">Koop</button></div>`}).join('');showModal(`<div class="modalTop"><div class="avatar">🛒</div><div class="modalTitle">Item Shop v18</div></div><div class="modalBody combat-body"><div class="place-card"><b>Shop locatie</b><br>${label180(currentPlace180())} · ${travelMode180()}<br>Items unlocken acties: trainen, studeren, content, freelance, repareren en verkopen.</div>${tabs}<div class="local-shop-section">${cat}</div>${items}<button class="btn alt" onclick="closeModal()">Terug</button></div>`)}
+  window.buyItem180=function(id){let d=ITEM2_180.find(x=>x.id===id);if(!d)return toast('Item bestaat niet.');let deny=itemDeny180(d);if(deny)return toast(deny);state.money-=d.price;giveItem180(id);msg180('Item gekocht','Ik kocht '+d.name+'. '+(d.use||''),d.effects||{},0,'good')};
+  window.myItems180=function(){state.items=state.items||[];let rows=state.items.length?state.items.map((it,i)=>{let d=ITEM2_180.find(x=>x.id===it.id)||{};let dur=it.durability==null?100:it.durability;return '<div class="item2-card"><b>'+(it.icon||d.icon||'📦')+' '+(it.name||d.name||'Item')+'</b><br>'+(it.cat||d.cat||'Item')+' · waarde '+m180(it.value||it.price||d.price||0)+(it.broken?' · kapot':'')+'<div class="item2-dur '+(dur<35?'low':'')+'"><span style="width:'+c180(dur)+'%"></span></div><div class="item2-grid"><button class="item2-action" onclick="useOwnedItem180('+i+')">Gebruik</button><button class="item2-action repair" onclick="repairOwnedItem180('+i+')">Repareer</button><button class="item2-action sell" onclick="sellOwnedItem180('+i+')">Verkoop</button><button class="item2-action alt" onclick="itemInfo180('+i+')">Info</button></div></div>'}).join(''):'<div class="item2-card">Nog geen items.</div>';showModal('<div class="modalTop"><div class="avatar">🎒</div><div class="modalTitle">Mijn Items</div></div><div class="modalBody combat-body">'+rows+'<button class="btn" onclick="itemShop180()">🛒 Naar Item Shop</button><button class="btn alt" onclick="closeModal()">Terug</button></div>')};
+  window.useOwnedItem180=function(i){let it=state.items[i];if(!it)return;let d=ITEM2_180.find(x=>x.id===it.id)||{};if(it.broken)return toast('Dit item is kapot. Eerst repareren.');it.durability=c180((it.durability==null?100:it.durability)-r180(3,12));if(it.durability<=5){it.broken=true;it.durability=0}let stats=Object.assign({},d.effects||{Happiness:1});let text=d.use||('Ik gebruikte '+(it.name||'het item')+'.');let acts=d.actions||[];if(acts.includes('study'))stats.Smarts=(stats.Smarts||0)+2;if(acts.includes('train')||acts.includes('train_football')){stats.Fitness=(stats.Fitness||0)+2;stats.Stamina=(stats.Stamina||0)-2}if(acts.includes('train_combat')){stats.Fitness=(stats.Fitness||0)+2;stats.Stamina=(stats.Stamina||0)-3;if(state.combat&&state.combat.stats)state.combat.stats.striking=c180((state.combat.stats.striking||35)+1)}if(acts.includes('train_grappling')){stats.Fitness=(stats.Fitness||0)+2;stats.Smarts=(stats.Smarts||0)+1;stats.Stamina=(stats.Stamina||0)-3;if(state.combat&&state.combat.stats)state.combat.stats.grappling=c180((state.combat.stats.grappling||35)+1)}if(acts.includes('stream')||acts.includes('content')){state.social=(state.social||0)+r180(3,30);stats.Happiness=(stats.Happiness||0)+2;stats.Looks=(stats.Looks||0)+1}if(acts.includes('freelance')&&state.age>=16){let earn=r180(20,180);state.money+=earn;text+=' Ik pakte ook een kleine freelance klus: '+m180(earn)+'.'}msg180('Item gebruikt',text,stats,0,it.broken?'warn':'good')};
+  window.repairOwnedItem180=function(i){let it=state.items[i];if(!it)return;let cost=Math.max(15,Math.round((it.value||it.price||100)*.12));if((state.money||0)<cost)return toast('Niet genoeg geld voor reparatie: '+m180(cost));state.money-=cost;it.broken=false;it.durability=100;msg180('Item gerepareerd','Ik repareerde '+(it.name||'het item')+'. Het kan weer mee.',{Happiness:1},0,'good')};
+  window.sellOwnedItem180=function(i){let it=state.items[i];if(!it)return;let val=it.value||it.price||100,dur=it.durability==null?100:it.durability,sell=Math.max(1,Math.round(val*(it.broken?.15:.45)*(dur/100))),name=it.name||'item';state.items.splice(i,1);state.money+=sell;msg180('Item verkocht','Ik verkocht '+name+' voor '+m180(sell)+'.',{Happiness:-1},0,'warn')};
+  window.itemInfo180=function(i){let it=state.items[i];if(!it)return;let d=ITEM2_180.find(x=>x.id===it.id)||{};showModal('<div class="modalTop"><div class="avatar">'+(it.icon||d.icon||'📦')+'</div><div class="modalTitle">'+(it.name||d.name||'Item')+'</div></div><div class="modalBody combat-body"><div class="item2-card"><b>Info</b><br>Categorie: '+(it.cat||d.cat||'Item')+'<br>Acties: '+((d.actions||[]).join(', ')||'geen speciale acties')+'<br>Waarde: '+m180(it.value||it.price||d.price||0)+'<br>Durability: '+(it.durability==null?100:it.durability)+'%</div><button class="btn alt" onclick="myItems180()">Terug</button></div>')};
+  window.buyItemScreen=window.itemShop180;window.itemShop=window.itemShop180;window.itemsShop=window.itemShop180;window.inventoryScreen=window.myItems180;window.myItemsScreen=window.myItems180;try{buyItemScreen=window.itemShop180}catch(e){}
+  const oldAssets180=window.assetsHTML||(typeof assetsHTML==='function'?assetsHTML:null);if(oldAssets180){window.assetsHTML=function(){let h=oldAssets180();if(!h.includes('Item Shop v18'))h+=`<div class="section">Items v18</div>${row('🛒','Item Shop v18','Nieuwe items met acties, locatie-locks en repareren/verkopen','itemShop180()')}${row('🎒','Mijn Items','Gebruik, repareer of verkoop items','myItems180()')}`;return h};try{assetsHTML=window.assetsHTML}catch(e){}}
+  const oldActivities180=window.activitiesHTML||(typeof activitiesHTML==='function'?activitiesHTML:null);if(oldActivities180){window.activitiesHTML=function(){let h=oldActivities180();try{if(state.vacation&&!h.includes('Vakantie Hub v18'))h+=`<div class="section">Vakantie</div>${row('🌍','Vakantie Hub v18','Alle lokale vakantie-opties met werkende acties','vacationHub180()')}`;}catch(e){}return h};try{activitiesHTML=window.activitiesHTML}catch(e){}}
+  const oldMigrate180=window.migrate||(typeof migrate==='function'?migrate:null);if(oldMigrate180&&!oldMigrate180.__vacItem180){window.migrate=function(s){s=oldMigrate180(s);try{if(s.vacation)s.vacation=norm180(s.vacation);if(s.world)s.world=norm180(s.world);if(s.city)s.city=norm180(s.city);if(s.placeId)s.placeId=norm180(s.placeId);if(s.homePlaceId)s.homePlaceId=norm180(s.homePlaceId);(s.items||[]).forEach(it=>{if(it.durability==null)it.durability=100;if(it.value==null)it.value=it.price||100})}catch(e){}return s};window.migrate.__vacItem180=true;try{migrate=window.migrate}catch(e){}}
+  setTimeout(()=>{try{normalizeSave180();(state.items||[]).forEach(it=>{if(it.durability==null)it.durability=100;if(it.value==null)it.value=it.price||100});safeSave()}catch(e){}},300);
+})();
+
+
+/* v18.1 Jail Travel / Moving Lock */
+(function(){
+  function inJail181(){
+    try{
+      if(typeof isInJail === 'function') return !!isInJail();
+    }catch(e){}
+    return !!(state && state.jail && state.jail.yearsLeft > 0);
+  }
+  function jailText181(){
+    try{
+      const fac = state && state.jail && state.jail.facility ? state.jail.facility : (state && state.age < 18 ? 'jeugddetentie' : 'gevangenis');
+      const left = state && state.jail && state.jail.yearsLeft ? state.jail.yearsLeft : '?';
+      return 'Je zit in ' + fac + ' en hebt nog ' + left + ' jaar te gaan. Vakantie, emigreren en verhuizen zijn logisch geblokkeerd.';
+    }catch(e){
+      return 'Je zit vast. Vakantie, emigreren en verhuizen zijn geblokkeerd.';
+    }
+  }
+  function blockJail181(){
+    try{ toast(jailText181()); }catch(e){}
+    return true;
+  }
+  window.isTravelBlockedByJail181 = inJail181;
+
+  // If a player gets convicted while on vacation, cancel vacation and return them to their home world/place.
+  const oldConvict181 = window.convict || (typeof convict === 'function' ? convict : null);
+  if(oldConvict181 && !oldConvict181.__jailTravelLock181){
+    window.convict = function(reason, years){
+      try{
+        if(state && state.vacation){
+          const oldPlace = state.vacation;
+          state.vacation = null;
+          state.world = state.homeWorldBeforeVacation || state.world || 'enkhuizen';
+          state.placeId = state.world;
+          try{ addLog('<b>Vakantie afgebroken</b><br>Door mijn arrestatie werd mijn vakantie in '+oldPlace+' direct beëindigd.', 'bad', false); }catch(e){}
+        }
+      }catch(e){}
+      return oldConvict181.apply(this, arguments);
+    };
+    window.convict.__jailTravelLock181 = true;
+    try{ convict = window.convict; }catch(e){}
+  }
+
+  // Direct v18 travel wrappers.
+  ['travelAmerica180','travelJapan180','travelAmsterdam180','travelJamaica180','travelNightCity180','travelSpain180','travelAlkmaar180','returnHome180'].forEach(function(fn){
+    const old = window[fn];
+    if(typeof old === 'function' && !old.__jailTravelLock181){
+      const wrapped = function(){
+        if(inJail181()) return blockJail181();
+        return old.apply(this, arguments);
+      };
+      wrapped.__jailTravelLock181 = true;
+      window[fn] = wrapped;
+      try{ if(typeof globalThis[fn] !== 'undefined') globalThis[fn] = wrapped; }catch(e){}
+    }
+  });
+
+  // Vacation hub and location actions cannot be used from jail.
+  ['vacationHub180','usaHub180','japanHub180','spainHub180','alkmaarHub180','amsterdamHub180','jamaicaHub180','nightCityVacationHub180','runVacationAction180'].forEach(function(fn){
+    const old = window[fn];
+    if(typeof old === 'function' && !old.__jailTravelLock181){
+      const wrapped = function(){
+        if(inJail181()) return blockJail181();
+        return old.apply(this, arguments);
+      };
+      wrapped.__jailTravelLock181 = true;
+      window[fn] = wrapped;
+      try{ if(typeof globalThis[fn] !== 'undefined') globalThis[fn] = wrapped; }catch(e){}
+    }
+  });
+
+  // Older aliases/screens also blocked.
+  [
+    'americaVacationScreen','usaVacationScreen','americaHub','usaHub','showAmerica','showUSA','usaActions','americaActions',
+    'japanVacationScreen','tokyoVacationScreen','japanHub','tokyoHub','showJapan','showTokyo','japanActions','tokyoActions',
+    'spainVacationScreen','spainHub','showSpain','spainActions','alkmaarVacationScreen','showAlkmaar','alkmaarActions',
+    'amsterdamVacationScreen','amsterdamHub','showAmsterdam','amsterdamActions',
+    'jamaicaVacationScreen','jamaicaHub','showJamaica','jamaicaActions',
+    'nightCityVacationScreen','ncVacationScreen','nightCityHub','showNightCityVacation'
+  ].forEach(function(fn){
+    const old = window[fn];
+    if(typeof old === 'function' && !old.__jailTravelLock181){
+      const wrapped = function(){
+        if(inJail181()) return blockJail181();
+        return old.apply(this, arguments);
+      };
+      wrapped.__jailTravelLock181 = true;
+      window[fn] = wrapped;
+      try{ if(typeof globalThis[fn] !== 'undefined') globalThis[fn] = wrapped; }catch(e){}
+    }
+  });
+
+  // Moving/emigration guards.
+  ['moveToNightCity','moveToJapan','moveToAmerica','moveToSpain','moveToAmsterdam','moveToJamaica','moveToCountry','emigrateTo','relocateTo','setResidence','becomeResident'].forEach(function(fn){
+    const old = window[fn] || (typeof globalThis !== 'undefined' ? globalThis[fn] : null);
+    if(typeof old === 'function' && !old.__jailTravelLock181){
+      const wrapped = function(){
+        if(inJail181()) return blockJail181();
+        return old.apply(this, arguments);
+      };
+      wrapped.__jailTravelLock181 = true;
+      window[fn] = wrapped;
+      try{ if(typeof globalThis[fn] !== 'undefined') globalThis[fn] = wrapped; }catch(e){}
+    }
+  });
+
+  // World/travel menus: if a jail tab accidentally exposes travel, show jail reason instead.
+  const oldActivities181 = window.activitiesHTML || (typeof activitiesHTML === 'function' ? activitiesHTML : null);
+  if(oldActivities181 && !oldActivities181.__jailTravelLock181){
+    window.activitiesHTML = function(){
+      const h = oldActivities181.apply(this, arguments);
+      if(!inJail181()) return h;
+      // Juvie/prison HTML already takes over elsewhere, but this prevents stray vacation rows.
+      return String(h).replace(/<div class="section">Vakantie<\/div>[\s\S]*?vacationHub180\(\)[\s\S]*?(?=<div class="section">|$)/g, '');
+    };
+    window.activitiesHTML.__jailTravelLock181 = true;
+    try{ activitiesHTML = window.activitiesHTML; }catch(e){}
+  }
+
+  setTimeout(function(){
+    try{
+      if(inJail181() && state.vacation){
+        const oldPlace = state.vacation;
+        state.vacation = null;
+        state.world = state.homeWorldBeforeVacation || state.world || 'enkhuizen';
+        state.placeId = state.world;
+        addLog('<b>Vakantie afgebroken</b><br>Omdat ik vastzit, kan ik niet op vakantie blijven in '+oldPlace+'.', 'bad', false);
+        safeSave();
+        render();
+      }
+    }catch(e){}
+  }, 350);
+})();
