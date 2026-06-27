@@ -814,3 +814,192 @@ main{
 #screenContent .rTitle{
   color:#63dff0;
 }
+
+
+/* v20.5 Unified Business Manager - original dark cards/rows only */
+.biz205Stat{font-size:14px;color:#b9c2d4}
+.modalBody hr{border:0;border-top:1px solid rgba(255,255,255,.12);margin:12px 0}
+
+
+/* v20.6 Avatar Head Sprite Integration */
+.headSprite206{
+  display:inline-block;
+  width:32px;
+  height:32px;
+  object-fit:contain;
+  vertical-align:middle;
+  image-rendering:auto;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,.20));
+}
+.headSprite206.sm{ width:28px; height:28px; }
+.headSprite206.md{ width:32px; height:32px; }
+.headSprite206.lg{ width:56px; height:56px; }
+.headSprite206.xl{ width:84px; height:84px; }
+.spriteGrid206{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin-top:10px;
+}
+.spriteCell206{
+  background:#20242e;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;
+  padding:10px;
+  text-align:center;
+}
+
+
+/* v21.0 Replace old CSS avatars with real sprites */
+.modalBody .headSprite206.xl{
+  width:96px;
+  height:96px;
+  object-fit:contain;
+  display:block;
+  margin:0 auto 8px auto;
+}
+.modalTitle .headSprite206,
+.rIco .headSprite206{
+  display:inline-block;
+}
+
+
+/* v21.1 Force PNG sprites everywhere */
+.headSprite206.sprite211{
+  display:inline-block;
+  object-fit:contain;
+  vertical-align:middle;
+}
+.avatar > .headSprite206.sprite211,
+.rIco > .headSprite206.sprite211{
+  width:38px;
+  height:38px;
+}
+.headSprite206.sprite211.xl{
+  width:104px;
+  height:104px;
+  display:block;
+  margin:0 auto 8px auto;
+}
+.modalTitle .headSprite206.sprite211{
+  width:32px;
+  height:32px;
+  display:inline-block;
+  margin-right:6px;
+}
+
+
+/* v21.2 Adult role sprite stage fix */
+.sprite212{
+  object-fit:contain;
+}
+.rIco .sprite212,
+.avatar .sprite212{
+  width:38px;
+  height:38px;
+}
+.sprite212.xl{
+  width:104px;
+  height:104px;
+  display:block;
+  margin:0 auto 8px auto;
+}
+
+
+/* v21.3 Modal sprite context sync */
+.sprite213.xl,
+.modalBody .sprite213.xl{
+  width:108px;
+  height:108px;
+  display:block;
+  margin:0 auto 8px auto;
+  object-fit:contain;
+}
+.rIco .sprite213,
+.avatar .sprite213{
+  width:38px;
+  height:38px;
+  object-fit:contain;
+}
+.modalTitle .sprite213{
+  width:32px;
+  height:32px;
+  display:inline-block;
+  vertical-align:middle;
+}
+
+
+/* v21.4 Pre-render relationship sprite sync */
+.sprite214{
+  object-fit:contain;
+}
+.rIco .sprite214,
+.avatar .sprite214{
+  width:38px;
+  height:38px;
+}
+.sprite214.xl{
+  width:108px;
+  height:108px;
+  display:block;
+  margin:0 auto 8px auto;
+}
+
+
+/* v21.5 Childhood Activities Restore */
+.childRestore215Note{
+  color:#b9c2d4;
+  font-size:14px;
+}
+
+
+/* v21.6 Flag asset icons */
+.flagIcon216{
+  display:inline-block;
+  width:38px;
+  height:28px;
+  object-fit:contain;
+  vertical-align:middle;
+  border-radius:5px;
+  box-shadow:0 1px 2px rgba(0,0,0,.35);
+}
+.flagIcon216.md{width:38px;height:28px}
+.flagIcon216.lg{width:48px;height:34px}
+.rIco .flagIcon216,
+.avatar .flagIcon216{
+  width:42px;
+  height:30px;
+}
+.modalTop .avatar .flagIcon216{
+  width:48px;
+  height:34px;
+}
+
+
+/* v21.7 Family genetics + sprite barber fix */
+.barberColorChip217{display:inline-block;padding:4px 8px;border-radius:8px;background:#1a2230;margin:2px 0}
+
+
+/* v21.8 Stability Debug Runtime Fix */
+.sprite218{
+  object-fit:contain;
+}
+.rIco .sprite218,
+.avatar .sprite218{
+  width:38px;
+  height:38px;
+}
+.sprite218.xl{
+  width:108px;
+  height:108px;
+  display:block;
+  margin:0 auto 8px auto;
+}
+
+
+/* v22.0 Original Activities Restore */
+.restore220Note{color:#b9c2d4;font-size:14px}
+
+
+/* v22.1 Travel activities + return home + gender sprite fix */
+.travel221Note{color:#b9c2d4;font-size:14px}

@@ -335,3 +335,262 @@ Deze versie scheidt werk logisch:
 - DLC/reizen opnieuw ingedeeld: wereldkaart, huidige vakantie, per land, activiteit-logica, nightlife, shops, contacten.
 - Pets, dierenverkoop-risico, ouderfailliet, wees mode en business/investeren staan op logische plekken.
 - Activities wordt niet meer gevuld door losse oude injecties; v20.4 bepaalt de hoofdstructuur.
+
+## v20.5 Unified Business Manager + Realistic Revenue System
+- `Eigen business` en `Business classic` zijn samengevoegd tot één business mode: `businessMasterHub205()`.
+- Oude `state.businesses` en `state.lifestyle.businesses` worden automatisch gemigreerd naar `state.businessManager205.businesses`.
+- Oude business arrays worden leeggemaakt zodat oude yearly business logica niet dubbel winst uitkeert.
+- Business vanaf 18 jaar blijft verplicht.
+- Business heeft nu realistische jaarformule:
+  - omzet
+  - vaste kosten
+  - variabele kosten
+  - personeelskosten
+  - marketingkosten
+  - administratie/belasting
+  - winst/verlies
+- Nieuwe business stats:
+  - level, reputatie, kwaliteit, marketing, personeel, stress, risico, kostencontrole, cash reserve, waarde.
+- Managementacties:
+  - uitbreiden
+  - personeel aannemen
+  - marketingcampagne
+  - kwaliteit verbeteren
+  - kosten besparen
+  - problemen oplossen
+  - cash reserve uitbetalen
+  - privé bijleggen
+  - verkopen
+- Jaarlijkse business events met goede/slechte impact.
+- Faillissement als cash reserve/risico/verliesreeks te slecht wordt.
+- v20.4 Geld & Lifestyle hub aangepast: nog maar één `Eigen Business` knop, geen `Business classic` meer.
+
+
+## v20.6 Avatar Head Sprite Integration
+- De 12 gegenereerde simpele hoofdjes zijn automatisch uitgeknipt en als losse transparante sprites toegevoegd in `assets/avatar_sprites/`.
+- Varianten:
+  - male_light_blond / brown / black
+  - female_light_blond / brown / black
+  - male_dark_blond / brown / black
+  - female_dark_blond / brown / black
+- Compacte avatar-iconen in de game gebruiken nu deze sprite-heads in plaats van losse emoji waar mogelijk.
+- `renderPersonEmoji199()` en `humanIcon()` zijn gepatcht om sprite-HTML te geven.
+- `refreshSprites206()` houdt icons synchroon na genetics / barber / relaties / classmates.
+- Structuur is voorbereid om later extra sprite-sets toe te voegen zoals Asian, kids, ouderen of meer hairstyles.
+
+
+## v20.7 Alternate Hairstyle Sprite Pack
+- De avatar sprites zijn vervangen door een nieuwe set met 1 andere hairstyle voor iedereen.
+- Nog steeds 12 basisvarianten:
+  - male / female
+  - light / dark
+  - blond / brown / black
+- De nieuwe sprite sheet is technisch correct uitgeknipt naar losse transparante PNG's.
+- Bestanden zijn opnieuw geplaatst in `assets/avatar_sprites/`, dus de bestaande avatar integratie blijft direct werken.
+- Preview toegevoegd: `assets/avatar_sprites/avatar_sprite_sheet_preview_v207.png`
+
+
+## v20.8 Age Stage Avatar Sprites
+- Avatar sprites ondersteunen nu ook leeftijdsfases:
+  - baby (0-3)
+  - child/kind (4-12)
+  - teen/tiener (13-17)
+  - adult/volwassene (18+)
+- Voor alle 12 basiscombinaties zijn baby-, child- en teen-varianten toegevoegd.
+- Bestandsstructuur:
+  - `baby_male_light_blond.png`
+  - `child_male_light_blond.png`
+  - `teen_male_light_blond.png`
+  - enzovoort voor alle man/vrouw × light/dark × blond/brown/black combinaties.
+- `humanIcon()` en sprite rendering kiezen nu automatisch een sprite op basis van leeftijd.
+- Hierdoor kunnen baby’s, kinderen, tieners, spelers, siblings, classmates en familieleden logisch verschillende hoofdjes hebben.
+- Preview toegevoegd: `assets/avatar_sprites/avatar_age_stage_preview_v208.png`
+
+
+## v20.9 Real Baby / Child / Teen Sprite Sheet
+- De echte 36-delige sprite sheet voor baby, kind en tiener is verwerkt.
+- Niet meer geschaalde volwassen hoofdjes: alle baby/child/teen sprites zijn apart uitgeknipt uit de nieuwe sheet.
+- Structuur:
+  - baby_light male/female blond/brown/black
+  - baby_dark male/female blond/brown/black
+  - child_light male/female blond/brown/black
+  - child_dark male/female blond/brown/black
+  - teen_light male/female blond/brown/black
+  - teen_dark male/female blond/brown/black
+- Bestandsnamen volgen exact de renderer:
+  - `baby_male_light_blond.png`
+  - `child_female_dark_brown.png`
+  - `teen_male_dark_black.png`
+  - enzovoort.
+- v20.8 age-stage renderer blijft actief en kiest automatisch:
+  - 0-3 baby
+  - 4-12 child
+  - 13-17 teen
+  - 18+ adult
+- Preview toegevoegd:
+  - `assets/avatar_sprites/avatar_baby_child_teen_preview_v209.png`
+- Bron sheet bewaard:
+  - `assets/avatar_sprites/source_baby_child_teen_sheet_v209.png`
+
+
+## v21.0 Real Sprite Profiles Fix
+- Fix voor profielschermen waar nog de oude `ava199` CSS-avatar zichtbaar was.
+- Oude CSS-avatar wordt nu automatisch vervangen door echte PNG sprite uit `assets/avatar_sprites`.
+- Werkt ook als oudere patches nog `ava199` in modals injecteren.
+- `renderPersonAvatar199`, `renderPersonEmoji199` en `humanIcon` sturen nu allemaal naar de sprite renderer.
+- Modals voor ouders/kinderen/siblings/classmates/friends/relaties worden na openen opgeschoond.
+- Debug helper toegevoegd: `avatarSpriteDebug210()`.
+
+
+## v21.1 Force PNG Sprites Everywhere
+- Hard fix voor oude opgeslagen emoji-icons zoals 👶 die nog in topbar/tabs verschenen.
+- `avatar()`, `humanIcon()`, `classmateAvatar()`, `renderPersonEmoji199()`, `renderPersonAvatar199()` en spriteHTML-functies sturen nu allemaal direct naar PNG sprites.
+- `state.icon` en oude person icons worden bij render/save overschreven met echte `<img>` sprites.
+- Topbar, bottom tabs, rows en oude CSS-avatar blokken worden na render opgeschoond.
+- Testfunctie toegevoegd: `spriteTest211()`.
+
+
+## v21.2 Adult Role Sprite Stage Fix
+- Fix voor ouders die als baby-sprite getoond werden.
+- Oorzaak: v21.1 verving oude human emoji's in rows soms blind met de player-sprite.
+- Ouders, teachers, bosses, coaches en managers forceren nu adult sprites.
+- Player gebruikt eigen leeftijd.
+- Kinderen, siblings en classmates gebruiken hun eigen leeftijd.
+- Relationships rows worden na render correct opnieuw gezet.
+- Debug helper: `spriteRoleDebug212()`.
+
+
+## v21.3 Modal Sprite Context Sync
+- Fix voor profiel-popups waar de relationship row wel de juiste sprite had, maar de grote Uiterlijk-sprite een andere/fallback sprite pakte.
+- Parent/child/sibling/friend/classmate screens zetten nu expliciet de actuele persoon als modal-context.
+- De modalTop avatar, modalTitle sprite en grote Uiterlijk-card sprite worden gelijkgetrokken naar dezelfde persoon.
+- Oude verkeerde `<img>` sprites worden nu ook vervangen, niet alleen oude `ava199` CSS avatars.
+- Relationship rows blijven na render gecorrigeerd.
+- Debug helper: `spriteModalDebug213()`.
+
+
+## v21.4 Pre-Render Relationship Sprite Sync
+- Fix voor sprite-flicker in Relationships: ouders werden eerst met oude/verkeerde sprites getoond en daarna pas gecorrigeerd.
+- Moeder/vader/kinderen/siblings icons worden nu vóór `relationshipsHTML()` al gesynchroniseerd.
+- De HTML-string van Relationships wordt direct aangepast voordat hij in de DOM komt.
+- Familiehub voert ook pre-render sync uit.
+- Geen delayed cleanup nodig voor parent rows.
+- Debug helper: `spriteNoFlickerDebug214()`.
+
+## v21.5 Childhood Activities Restore
+- Herstelt functies die door de Activities Master Router te ver verborgen waren, zonder oude dubbele combat/DLC/business rows terug te zetten.
+- Nieuwe hub: `Kindertijd & Spelen`.
+- Teruggezet/beter zichtbaar:
+  - Buiten spelen
+  - Dokter / Health
+  - Verstoppertje
+  - Tikkertje
+  - Voetbal buiten
+  - Speeltuin
+  - Schoolplein spelen
+  - Met vriendjes spelen
+  - Speelgoed spelen
+  - Kinder-tv kijken
+- Bestaande functies zoals `playHideSeek()`, `playTag()`, `playFootball()`, `gymScreen()` en `doctorVisit()` worden hergebruikt waar ze bestaan.
+- Nieuwe fallback-acties toegevoegd voor speeltuin/schoolplein/vriendjes/speelgoed/kinder-tv.
+- Hoofdactivities toont `Kindertijd & Spelen` alleen als je jonger dan 14 bent.
+- Report/debug functie: `lostActivitiesReport215()`.
+
+
+## v21.6 Flag Asset Icons for Travel World
+- Fix voor vlaggen die als landcode letters werden getoond, zoals ES, US, JP en JM.
+- Reizen & Wereld gebruikt nu echte SVG assets in `assets/flags/`.
+- Toegevoegd:
+  - spain.svg
+  - usa.svg
+  - japan.svg
+  - netherlands.svg
+  - amsterdam.svg
+  - jamaica.svg
+  - nightcity.svg
+  - world.svg
+- `travelWorldMasterHub204()` en `dlcPlaceMaster204()` zijn gepatcht om `flagIcon216()` te gebruiken.
+- Fallback cleanup vervangt oude letter/emoji vlaggen in travel rows.
+- Debug helper: `flagIconDebug216()`.
+
+
+## v21.7 Family Genetics + Sprite Barber Fix
+- Corrigeert rare familie-huidskleur mismatch: speler/siblings worden nu genetisch logischer afgeleid van moeder en vader.
+- Twee lichte ouders leveren niet meer ineens een veel donkerder kind op door puur regionale random generation.
+- `appearanceText199()` is vereenvoudigd zodat de tekst geen kapsels noemt die niet echt in de sprite-sheet bestaan.
+- Nieuwe sprite-aware kapper:
+  - knipbeurt
+  - haarbehandeling
+  - verven in sprite-ondersteunde kleuren: blond, bruin, zwart
+  - terug naar natuurlijke haarkleur
+- Huidtint/afkomst blijven genetisch; de kapper verandert alleen haar/verzorging.
+- Debug helper: `familyGeneticsDebug217()`.
+
+## v21.8 Stability Debug Runtime Fix
+- Kritieke runtime freeze opgelost.
+- Oorzaak gevonden: v21.7 liet `syncFamilyGenetics217()` `refreshSprites212()` aanroepen, terwijl `refreshSprites212()` weer `applyAppearanceToPeople199()` aanriep. Omdat `applyAppearanceToPeople199()` naar `syncFamilyGenetics217()` verwees, ontstond een oneindige lus.
+- v21.7 direct gepatcht:
+  - `refreshSprites212()` call uit genetics sync verwijderd.
+  - agressieve render/safeSave/migrate wrappers uit v21.7 uitgeschakeld.
+  - startup save/render van v21.7 uitgeschakeld.
+- v21.8 toegevoegd met guarded render/save wrappers.
+- Barber en familie-genetica blijven actief, maar zonder recursive loop.
+- Modal overlay leeg-blokkade wordt automatisch opgeschoond.
+- Debug helper: `stabilityDebug218()`.
+
+## v21.9 School Sprite Variety + Teacher Adult Fix
+- Klasgenoten krijgen nu meer visuele variatie via sprite-appearance:
+  - lichte/donkere huid
+  - blond/bruin/zwart haar
+  - regionale gewichten per land/home basis
+- Leraar is nu altijd een volwassene:
+  - age 24–51 ongeveer
+  - role teacher
+  - adult sprite
+- `classScreen()`, `teacherScreen()` en `classmateScreen()` zijn overschreven zodat ze altijd de goede sprites tonen.
+- `classmateAction()` synct nu icons/appearance ook door naar partner/vrienden wanneer relevant.
+- Debug helper: `schoolSpriteDebug219()` en `schoolSpriteDebug219(true)` voor nieuwe variatie.
+
+## v22.0 Original Activities Restore + Age Hubs
+- Controle gedaan op originele `app.js` functies die door de Activities Master Router verborgen waren.
+- Teruggezet onder nieuwe logische hubs:
+  - Vrije tijd & Uitgaan
+  - Straat & Risico
+  - Middelen & Herstel
+  - Auto & Mobiliteit
+  - Extra geld & assets
+- Herstelde/zichtbaar gemaakte functies:
+  - goOutWithFriends()
+  - gekkeSteegScreen()
+  - coffeeshopScreen()
+  - recoveryClinicScreen()
+  - drivingTest()
+  - buyCarScreen()
+  - carLifeScreen()
+  - walkScreen()
+  - sideHustle()
+  - socialMedia()
+  - casinoScreen()
+  - hospitalScreen()
+  - homeLifeScreen()
+  - vacation()
+- Niet teruggezet als losse dubbele rommel:
+  - oude combat duplicate rows
+  - oude DLC duplicate rows
+  - oude business classic duplicate rows
+- Debug report: `originalActivitiesReport220()`.
+
+## v22.1 Travel Activities In Main List + Return Home + Gender Sprite Fix
+- Als je in Amsterdam/Spanje/Amerika/Japan/Jamaica/Night City bent, verschijnen de lokale DLC-activiteiten direct in de normale Activities-lijst.
+- Nieuwe hub: `currentPlaceActivities221()`.
+- Vakantie krijgt duidelijke knop:
+  - `travelReturnHome221()`
+- Terug naar huis wordt geblokkeerd als je onder invloed bent; dan eerst ontnuchteren.
+- Amsterdam en andere DLC plekken tonen ook shops, nightlife en contacten in de directe lijst.
+- Gender sprite mismatch gefixt:
+  - bekende vrouwennamen worden female
+  - bekende mannennamen worden male
+  - teacher gender wordt uit Juf/Mevrouw/Mr/Meneer/Meester afgeleid
+- Debug helpers:
+  - `travelGenderDebug221()`
+  - `fixGenderSprites221()`
