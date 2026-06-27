@@ -661,3 +661,156 @@ body.amsterdam.weedtrip .btn.gold{background:#ffdf4a;color:#111}
 .effectBar190Value.good{color:#6dff91}
 .effectBar190Value.warn{color:#ffd76e}
 .effectBar190Value.bad{color:#ff8b82}
+
+
+/* v19.9 Appearance Genetics + Regional Avatar System */
+.ava199Card{display:block;text-align:left}
+.ava199{width:74px;height:74px;border-radius:50%;position:relative;margin:0 auto 10px;background:#d8a06b;box-shadow:0 0 0 3px rgba(255,255,255,.08), inset 0 -10px 20px rgba(0,0,0,.16);overflow:hidden}
+.ava199.big{width:92px;height:92px}
+.ava199.small{width:48px;height:48px}
+.ava199.skin-light{background:#f3c7a0}
+.ava199.skin-lightMedium{background:#dca978}
+.ava199.skin-medium{background:#b77a4b}
+.ava199.skin-mediumDark{background:#7b4a2e}
+.ava199.skin-dark{background:#3e2418}
+.ava199Face{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;color:rgba(0,0,0,.74);font-weight:900;z-index:3}
+.ava199.skin-dark .ava199Face,.ava199.skin-mediumDark .ava199Face{color:rgba(255,255,255,.82)}
+.ava199Eyes{font-size:15px;letter-spacing:7px;margin-left:7px;margin-top:12px}
+.ava199Mouth{font-size:18px;line-height:14px}
+.ava199Hair{position:absolute;left:-4px;right:-4px;top:-8px;height:34px;border-radius:50% 50% 42% 42%;background:#20140f;z-index:4}
+.ava199.hair-black .ava199Hair{background:#151515}
+.ava199.hair-darkBrown .ava199Hair{background:#2b1a12}
+.ava199.hair-brown .ava199Hair{background:#6b3d20}
+.ava199.hair-blond .ava199Hair{background:#d8b24a}
+.ava199.hair-red .ava199Hair{background:#a94722}
+.ava199.hair-gray .ava199Hair{background:#939393}
+.ava199.hair-white .ava199Hair{background:#e7e7e7}
+.ava199.hair-blue .ava199Hair{background:#2377d8}
+.ava199.hair-pink .ava199Hair{background:#d85aa5}
+.ava199.style-buzz .ava199Hair{height:18px;top:-2px}
+.ava199.style-fade .ava199Hair{height:24px;top:-4px;border-radius:42% 42% 25% 25%}
+.ava199.style-long .ava199Hair{height:64px;top:-8px;left:-8px;right:-8px;border-radius:48% 48% 36% 36%}
+.ava199.style-curly .ava199Hair,.ava199.style-afro .ava199Hair{height:48px;top:-15px;border-radius:50%;box-shadow:8px 5px 0 rgba(0,0,0,.09),-8px 6px 0 rgba(0,0,0,.08)}
+.ava199.style-afro .ava199Hair{height:58px;top:-22px;left:-10px;right:-10px}
+.ava199.style-dreads .ava199Hair,.ava199.style-braids .ava199Hair{height:54px;border-radius:45% 45% 20% 20%;background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.12) 0 2px,transparent 2px 8px)}
+.ava199.style-ponytail:after{content:"";position:absolute;right:-9px;top:22px;width:20px;height:36px;border-radius:50%;background:inherit;filter:brightness(.65);z-index:1}
+.ava199.style-bob .ava199Hair{height:48px;top:-5px;border-radius:44% 44% 18% 18%}
+
+
+/* v20.0 iPhone Safari Safe-Area Bottom Fix
+   Keeps bottom stats/actions above Safari's browser/home bar without harming Android.
+*/
+:root{
+  --ios-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --bottom-safe-pad: max(14px, var(--ios-safe-bottom));
+}
+
+/* Let iOS know the app is allowed to use the full viewport, then pad content back safely. */
+html{
+  min-height: 100%;
+  min-height: -webkit-fill-available;
+}
+body{
+  min-height: 100%;
+  min-height: -webkit-fill-available;
+  padding-bottom: var(--bottom-safe-pad);
+  overscroll-behavior-y: none;
+}
+
+/* Common app wrappers: add breathing room so the final Looks stat cannot hide behind Safari UI. */
+#app,
+.app,
+.phone,
+.screen,
+#screen,
+main{
+  padding-bottom: calc(74px + var(--bottom-safe-pad)) !important;
+}
+
+/* Scroll containers used in different BitzLife versions. */
+.content,
+.page,
+.list,
+.panel,
+.tabContent,
+#content,
+#main,
+#life,
+#activities,
+#relationships{
+  scroll-padding-bottom: calc(92px + var(--bottom-safe-pad));
+}
+
+/* Bottom nav / fixed action bars should sit above the iPhone safe area. */
+.bottomNav,
+.nav,
+.tabs,
+.tabbar,
+.bottomBar,
+.statDock,
+.statsDock,
+#bottomNav,
+#tabs,
+#tabbar{
+  padding-bottom: var(--ios-safe-bottom) !important;
+  bottom: 0;
+}
+
+/* If the stat bar itself is sticky/fixed, push it above the Safari/home indicator area. */
+.stats,
+.statbar,
+.statBar,
+.topStats,
+#stats,
+#statbar{
+  margin-bottom: max(0px, calc(var(--ios-safe-bottom) - 2px));
+}
+
+/* iPhone Safari only: dynamic viewport support. */
+@supports (height: 100dvh){
+  body{
+    min-height: 100dvh;
+  }
+}
+
+/* Narrow touch devices get extra bottom room; Android can handle it, iPhone needs it. */
+@media (max-width: 600px) and (pointer: coarse){
+  #app,
+  .app,
+  .phone,
+  .screen,
+  #screen,
+  main{
+    padding-bottom: calc(96px + var(--bottom-safe-pad)) !important;
+  }
+  .modalBody{
+    padding-bottom: calc(26px + var(--bottom-safe-pad)) !important;
+  }
+  .row:last-child,
+  .card:last-child,
+  .section:last-child{
+    margin-bottom: max(10px, var(--ios-safe-bottom));
+  }
+}
+
+
+/* v20.4 Activities Master Router - keep original BitzLife look */
+.modalBody .section,
+#screenContent .section{
+  background:#353d4e;
+  color:#dfe8ff;
+  font-weight:900;
+}
+.modalBody .row,
+#screenContent .row{
+  background:#202124;
+}
+.modalBody .card,
+#screenContent .card{
+  background:#20242e;
+  border:1px solid rgba(255,255,255,.08);
+}
+.modalBody .rTitle,
+#screenContent .rTitle{
+  color:#63dff0;
+}

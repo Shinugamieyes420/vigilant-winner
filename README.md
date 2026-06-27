@@ -253,3 +253,85 @@ Deze versie scheidt werk logisch:
 - Elke keuze heeft kosten, succes/faal-kans, risico, stat-effecten, en mogelijke extra beloning.
 - Mogelijke uitkomsten: nieuw vakantiecontact, item/souvenir, skill progressie, business lead, football form, cyberware, herstel of risico/fail.
 - Toegevoegd: 720 tekstvariaties voor non-nightlife vakantie-activiteiten bovenop de v19.5 nightlife teksten.
+
+## v19.7 Family Age + Role Sync
+- Fix voor broers/zussen die sneller ouder werden dan de speler door meerdere ageUp-patches.
+- Familieleden krijgen een locked leeftijdsverschil t.o.v. de speler.
+- Jongere siblings blijven 'zusje/broertje' heten, ook als ze volwassen worden.
+- Oudere siblings tonen als 'oudere zus/oude broer'; tweeling als tweeling.
+- Sibling detailpagina heeft correctieknoppen: jonger / ouder / tweeling.
+- Ouders tonen nu ook hun leeftijd in de Relationships-lijst.
+- Parent/sibling ages worden na elke verjaardag opnieuw gesynchroniseerd.
+
+## v19.8 Child Naming + Fertility Rules
+- Bij een succesvol biologisch kind krijg je nu een naam-popup met voornaam en achternaam.
+- Je kunt bestaande kinderen hernoemen via de child detailpagina.
+- Vrouwen kunnen vanaf 48 jaar geen natuurlijke kinderen meer krijgen.
+- Vruchtbaarheid is logischer: normale kans t/m 34, lager na 35, laag na 40, heel laag 45-47, nul vanaf 48.
+- Partnerpagina toont vruchtbaarheidsstatus en geschatte kans.
+- Adoptie toegevoegd als logische optie wanneer natuurlijke zwangerschap niet kan of niet gewenst is.
+
+## v19.9 Appearance Genetics + Regional Avatar System
+- Personen krijgen nu een appearance object: skinTone, hairColor, hairStyle, hairTexture, eyeColor, regionOrigin en originMix.
+- Random NPCs/vakantiecontacten krijgen appearance op basis van regio: Nederland vaker licht, Jamaica vaker donker, Japan/Spanje/USA eigen pools.
+- Kinderen erven uiterlijk genetisch van ouders: huidtint gemiddeld met variatie, haar/ogen via ouderlijke traits.
+- Emoji's krijgen passende huidtint-modifiers waar mogelijk.
+- Detailprofielen krijgen een kleine custom CSS-avatar met huid- en haarlaag.
+- Nieuwe Kapper-functie: kapsel/haarkleur wijzigen zonder huidtint, ogen of afkomst te veranderen.
+- Huidkleur beïnvloedt geen stats, gedrag, school, werk, criminaliteit of kansen.
+
+## v20.0 iPhone Safari Safe-Area Bottom Fix
+- Fix voor iPhone Safari waarbij de onderste Looks/stat buiten beeld of achter de browser/home-bar viel.
+- Viewport krijgt `viewport-fit=cover`.
+- CSS gebruikt `env(safe-area-inset-bottom)` en extra bottom padding op app/screen wrappers.
+- Bottom nav/stat bars krijgen veilige onderruimte.
+- Android blijft praktisch hetzelfde, maar krijgt veilige extra scrollruimte op kleine touchscreens.
+
+## v20.1 Parent Bankruptcy + Animal Crime Orphan Mode + Business 18+
+- Ouders hebben nu verborgen oudergeld en oudersteun-teller.
+- 10 fietsen/cadeaus/financiële hulp door ouders of oudergeld op = ouders failliet, verhuizing, speler terug naar €0 en zware negatieve stats.
+- Parent detailpagina heeft extra opties om fiets/e-bike te vragen; dit telt mee voor faillissementsrisico.
+- Huisdieren door ouders betaald tellen ook als oudersteun.
+- Dieren verkopen telt nu lifetime mee.
+- 4e dierverkoop: random/verhaal-event dat het dier snel sterft bij nieuwe eigenaar; eigenaar wordt boos, slaat je in elkaar, health daalt hard.
+- 5e dierverkoop: illegale dierenhandel.
+  - Onder 18: ouders worden opgepakt/verantwoordelijk gehouden en speler gaat in Wees mode.
+  - Vanaf 18: speler wordt zelf veroordeeld tot 4 jaar gevangenis.
+- Wees mode toegevoegd met jeugdzorg/pleeggezin acties en yearly events.
+- Investeren en eigen business zijn expliciet vanaf 18; onder 18 geblokkeerd.
+
+## v20.2 Activities Restore + Full Patch Debug
+- Kritieke fix voor v20.1: typfout `activitiesHTML=window.activities201` hersteld naar `activitiesHTML=window.activitiesHTML`.
+- Extra safety patch toegevoegd zodat Activities nooit meer volledig crasht als een wrapper stuk gaat.
+- Oude activiteiten blijven bereikbaar; nieuwe systemen worden alleen toegevoegd als extra rows.
+- Fallback Activities-scherm bevat Work, Education, Gym, Pets, Kapper, Money/Lifestyle, Business, Travel, Crime, Familie-risico, Sport-carrières en Patch Status.
+- ScreenHTML krijgt een defensive fallback voor het Activities-tabblad.
+- Duplicate rows worden licht opgeschoond.
+
+## v20.3 Legacy Continue Heirs
+- Death screen uitgebreid: na je dood kun je verder spelen als kind, sibling, kleinkind of neefje/nichtje als die bestaan.
+- Oude `continueAsChild` blijft werken, maar gebruikt nu de verbeterde erfgenaam-logica.
+- Erfgenamen krijgen eigen naam, leeftijd, gender, appearance, ouders/siblings/relaties en eigen log.
+- Overleden speler komt in legacy memorials.
+- Volwassen erfgenamen erven cash plus huizen, auto’s, items, pets, businesses en investeringen.
+- Minderjarige erfgenamen krijgen deels cash en een trust fund; grote assets staan onder beheer tot 18.
+- Trust fund komt automatisch vrij wanneer je 18 wordt.
+
+## v20.4 Activities Master Router + Original BitzLife Style
+- Hoofd-Activities volledig vervangen door één centrale master router zonder dubbele rijen.
+- Originele donkere BitzLife layout behouden: sections, rows, cards, modalTop/modalBody.
+- Nieuwe hoofdindeling:
+  - Werk & School
+  - Gezondheid & Uiterlijk
+  - Relaties & Familie
+  - Geld & Lifestyle
+  - Reizen & Wereld
+  - Sport & Combat
+  - Huisdieren
+  - Crime & Risico
+  - Legacy & Status
+- Verspreide functies worden samengevoegd in hubs, zonder oude functies weg te gooien.
+- Sport & Combat bundelt football, combat career, amateur, semi-pro, pro, UFC, GLORY, WWE en rankings.
+- DLC/reizen opnieuw ingedeeld: wereldkaart, huidige vakantie, per land, activiteit-logica, nightlife, shops, contacten.
+- Pets, dierenverkoop-risico, ouderfailliet, wees mode en business/investeren staan op logische plekken.
+- Activities wordt niet meer gevuld door losse oude injecties; v20.4 bepaalt de hoofdstructuur.
