@@ -699,3 +699,48 @@ Deze versie scheidt werk logisch:
   - `fightMatch118()`
   - `fightRecoveryScreen183()`
 - Debug helper: `combatDebug226()`.
+
+## v22.7 Combat Hard Override + Mobile Click Fix
+- Oude combat route schermen volledig hard-overriden:
+  - `combatRoute184()`
+  - `setCombatRoute184()`
+  - `combatAction184()`
+  - `combatStartScreen177()`
+  - oude `fightTryout118/fightTrain118/fightMatch118`
+- Route kiezen gebruikt nu alleen originele donkere BitzLife rows.
+- Oude witte combat184 route-cards worden niet meer gebruikt.
+- Mobiele click guard toegevoegd:
+  - modal, rows en buttons krijgen `pointer-events:auto`
+  - `touch-action: manipulation`
+  - hogere z-index
+  - modal body scrollt veilig met bottom padding
+- Training/tryout/route/fight menu’s zijn allemaal bereikbaar vanuit één `combatHub227()`.
+- Debug helper: `combatDebug227()`.
+
+## v22.8 Home Activities + Cleaner Fix
+- Thuis activiteiten volledig teruggezet in originele BitzLife stijl:
+  - chillen met vrienden
+  - gamen
+  - relaxen
+  - hangen thuis
+  - house party / vrienden over de vloer
+  - zelf schoonmaken
+  - social media thuis
+  - classic chill menu als extra route
+- Werkt voor:
+  - familiehuis / kamer
+  - huurwoning
+  - koopwoning
+- Nieuwe woningstats:
+  - cleanliness / schoon
+  - houseMood / vibe
+- Schoonmaker systeem:
+  - budget schoonmaker
+  - vaste schoonmaker
+  - premium schoonmaakservice
+  - huishoudmanager
+- Schoonmaker kan worden ingevuld/hernoemd met `setCleanerName228()`.
+- Schoonmaker kan direct langskomen met `cleanerVisit228()`.
+- Jaarlijkse verwerking met maandkosten x12 via `processCleanerYear228()`.
+- Huisdetail krijgt ook directe rows naar thuis activiteiten en schoonmaker.
+- Debug helper: `homeCleanerDebug228()`.

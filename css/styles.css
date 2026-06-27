@@ -1016,3 +1016,53 @@ main{
 
 /* v22.6 Combat Original Style Fix */
 .combat226Note{color:#b9c2d4;font-size:14px}
+
+
+/* v22.7 Combat Hard Override + Mobile Click Fix */
+#modal, #modalShade { pointer-events: auto; }
+#modal .row, #modal .btn {
+  pointer-events: auto !important;
+  touch-action: manipulation;
+  cursor: pointer;
+  position: relative;
+  z-index: 5;
+}
+#modal .modalBody.combat227Body {
+  max-height: calc(100dvh - 150px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: max(36px, env(safe-area-inset-bottom));
+}
+#modal .combat184-row,
+#modal .combat184-row * {
+  background: inherit !important;
+  color: inherit;
+}
+#modal .combat227Body .row {
+  background: #202124 !important;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0 !important;
+  min-height: 82px;
+}
+#modal .combat227Body .rTitle {
+  color: #63dff0 !important;
+}
+#modal .combat227Body .sub {
+  color: #9ca0a8 !important;
+}
+
+
+/* v22.8 Home Activities + Cleaner */
+.homeClean228{color:#b9c2d4;font-size:14px}
+#modal input.input{
+  width:100%;
+  box-sizing:border-box;
+  min-height:52px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  background:#14171d;
+  color:#eef3ff;
+  font-size:20px;
+  padding:10px 12px;
+  margin:8px 0 12px 0;
+}
