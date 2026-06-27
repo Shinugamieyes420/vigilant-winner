@@ -791,3 +791,177 @@ Deze versie scheidt werk logisch:
   - Schaal investeren
   - Grote uitbreiding
 - Debug helper: `businessGrowthDebug231()`.
+
+## v23.2 Combat Modal Tap Action Fix
+- Fix voor combat rows die op mobiel wel visueel klikbaar waren maar geen actie uitvoerden.
+- Combat rows gebruiken nu `data-combat-action-232` met één delegated pointer/touch/click handler op `#modal`.
+- Hierdoor werken Training, Herstel, Try-outs en Fight Mode ook als oude inline `onclick` of overlay/scrolllagen dwarszitten.
+- Alle oude combat entrypoints sturen naar het nieuwe tap-safe systeem:
+  - combatHub232()
+  - combatTrainingMenu232()
+  - combatRecoveryMenu232()
+  - combatTryoutMenu232()
+  - combatFightStart232()
+- Als je amateur/semi/pro bent, unlockt Fight Mode correct.
+- Debug helper: `combatClickDebug232()`.
+
+## v23.3 Relationship Events + Aviation Travel + Island Laws
+- Relatie-events geïntegreerd zonder aparte tab:
+  - partner ongelukkig
+  - scheiding dreigt
+  - partner vreemdgegaan
+  - jij betrapt op vreemdgaan
+  - open relatie bespreken
+  - driehoeksrelatie proberen
+  - relatietherapie, quality time, vergeven, scheiden
+- Relatie-events komen als meldingen/logs bij jaarlijkse processing en in partnerprofiel via Relatiegesprek.
+- Vliegtuig-icons gefixt:
+  - vliegtuigen blijven ✈️/🛩️/🛫/🛬
+  - baby/persoon sprites worden uit aircraft assets verwijderd
+- Eigen vliegtuig maakt vakantie goedkoper:
+  - vakantie toont lagere prijs als je bruikbaar vliegtuig hebt
+  - takeVacation gebruikt eigen vliegtuig en voegt vlieguren/slijtage toe
+- Privé-eiland reizen:
+  - gratis met eigen vliegtuig + landingsbaan
+  - goedkoper met eigen vliegtuig zonder landingsbaan
+  - duurder met charter/boot zonder vliegtuig
+- Privé-eiland wetten uitgewerkt als speelbaar systeem:
+  - belasting
+  - immigratie
+  - businessregels
+  - nachtleven
+  - gokken/casino
+  - milieu/bouw
+  - security/politie
+  - burgerschap
+- Wetten beïnvloeden jaarlijks:
+  - inkomsten
+  - kosten
+  - toerisme
+  - stabiliteit
+  - populatiegroei
+  - risico op incidenten/schandalen
+  - eilandwaarde
+- Debug helper: `debugRelAviationLaws233()`.
+
+## v23.4 Aircraft Selection + Air Dates
+- Assets krijgt nu directe sectie:
+  - Actief vliegtuig kiezen
+  - Rondje vliegen
+  - Actief vliegtuig beheren
+- Elk vliegtuig krijgt een localId en kan als actief vliegtuig worden geselecteerd.
+- Actief vliegtuig wordt gebruikt voor:
+  - rondje vliegen
+  - vakantie korting
+  - privé-eiland reizen
+- Rondje vliegen opties:
+  - solo rondje vliegen
+  - samen vliegen met partner
+  - vliegen met fling/date
+- Partner-vlucht:
+  - relatie kan verbeteren of licht ongemakkelijk worden afhankelijk van relatie/vibe
+- Fling/date-vlucht:
+  - 18+ only
+  - non-graphic volwassen intimiteit
+  - als je monogaam een partner hebt, telt dit als vreemdgaan en kan v23.3 relatie-event systeem reageren
+- Vliegtuig-icons hard gefixt:
+  - Cessna/Piper -> 🛩️
+  - normale aircraft -> ✈️
+  - private jets -> 🛫 / 🛬
+  - baby/persoon sprite fields worden verwijderd
+- Aircraft detail krijgt:
+  - Kies als actief vliegtuig
+  - Rondje vliegen met dit vliegtuig
+- Debug helper: `debugAircraftDates234()`.
+
+## v23.5 Home Tap + Rich Risk + Island Command
+- Home Activities tap-fix:
+  - rows gebruiken delegated modal events
+  - chillen/gamen/relaxen/hangen/party/schoonmaken werken op mobiel
+- Rich Risk Engine vanaf €50M net worth:
+  - rechtszaken van exen, ex-flings, klanten, werknemers, media
+  - claimbedragen €1M-€100M
+  - hacking-event met €2M gestolen en incident response
+  - éénmalige ontvoering per leven met €20M losgeld
+- Security/Legal hub in Assets:
+  - cyber consultant
+  - privacy management
+  - family security
+  - legal retainer
+  - umbrella insurance
+  - business compliance
+  - crisis team
+- Legal mini-game:
+  - advocaat kiezen
+  - bewijs verzamelen
+  - PR/media strategie
+  - schikken
+  - rechtbank mini-game in 3 rondes
+- Island Command:
+  - eigendommen/overgenomen eilanden kiezen
+  - bouwen op eiland
+  - defense assets kopen
+  - rivalen scouten/overnemen
+  - abstracte warfare events tegen kartels/rivalen
+  - aanvallen op jouw eiland
+- Eiland overnemen:
+  - kopen/uitkopen
+  - diplomatie/protectoraat
+  - juridische claim
+  - abstracte operatie
+- Bevolkingsbeleid na overname:
+  - bewoners maken / burgerschap
+  - beschermde residenten
+  - autonomie geven
+  - evacueren/herhuisvesten
+  - tribunaal/verbannen van leiders
+  - bezetting met zware heat/stabiliteit-straf
+  - geen slavernij/genocide-opties
+- Nieuwe eilandbouw:
+  - villa, mansion, haven, landingsbaan, powergrid, water
+  - winkels, resort, kliniek, ziekenhuis
+  - school, private university, research campus
+  - NASA-style launch platform (€3.5B)
+  - offshore bank district, industry zone, logistics hub
+- Debug helper: `debugV235()`.
+
+## v23.6 Home Global Tap Fix
+- Fix voor oude thuis-activiteiten rows die zichtbaar waren maar niet klikten.
+- Niet alleen nieuwe data-attributen, maar ook tekstherkenning:
+  - Chillen met vrienden
+  - Gamen
+  - Relaxen
+  - Hangen thuis
+  - House party / vrienden over de vloer
+  - Zelf schoonmaken
+  - Schoonmaker regelen
+  - Schoonmaker laten komen
+  - Social media thuis
+- Oude `homeActivity228()` en `homeAction()` worden hard doorgestuurd naar v23.6.
+- Oude inline onclicks worden verwijderd van herkende home rows om dead-clicks te voorkomen.
+- Global capture listeners op click/touchend/pointerup zorgen dat mobile taps werken.
+- Debug helper: `debugHomeTap236()`.
+
+## v23.7 Training Global Tap Fix
+- Fix voor training/herstel rows die zichtbaar zijn maar niet reageren.
+- Herkent ook oude rows op tekst:
+  - Techniektraining
+  - Cardio / conditie
+  - Lichte sparring
+  - Harde sparring
+  - Discipline / gameplan
+  - Rustweek
+  - Fysio / ijsbad
+  - Medische check
+- Oude `combatTrainingMenu226/227/229/232` worden doorgestuurd naar v23.7.
+- Oude `combatTrain226/227/229/232` en recovery functies worden doorgestuurd naar v23.7.
+- Oude inline onclicks worden weggehaald van herkende training rows.
+- Global capture listeners op click/touchend/pointerup zorgen dat mobile taps werken.
+- Debug helper: `debugTrainingTap237()`.
+
+## v23.8 Options Password Money Mode
+- Hamburger/options menu krijgt knop: `🔑 Password mode`.
+- Password `Admin100!` geeft direct €100.000.000 erbij.
+- Fout password geeft melding en logt waarschuwing.
+- Enter-to-submit werkt in het password inputveld.
+- Debug helper: `debugPasswordMode238()`.

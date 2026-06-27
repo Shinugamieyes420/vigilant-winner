@@ -1091,3 +1091,134 @@ main{
 
 /* v23.1 Business Growth Uncap Fix */
 #modal .v231Body{max-height:calc(100dvh - 150px);overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:max(36px,env(safe-area-inset-bottom));}
+
+
+/* v23.2 Combat Modal Tap Action Fix */
+#modal .v232CombatBody{
+  max-height:calc(100dvh - 150px);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:max(42px,env(safe-area-inset-bottom));
+}
+#modal [data-combat-action-232]{
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+  position:relative;
+  z-index:20;
+  cursor:pointer;
+  user-select:none;
+}
+#modal .v232CombatBody .row{
+  background:#202124!important;
+  border-bottom:1px solid var(--line);
+}
+#modal .v232CombatBody .rTitle{color:#63dff0!important}
+#modal .v232CombatBody .sub{color:#9ca0a8!important}
+
+
+/* v23.3 Relationship Events + Aviation Travel + Island Laws */
+#modal .v233Body{
+  max-height:calc(100dvh - 150px);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:max(42px,env(safe-area-inset-bottom));
+}
+#modal .v233Body .row,#modal .v233Body .btn{
+  pointer-events:auto!important;
+  touch-action:manipulation;
+  position:relative;
+  z-index:9;
+}
+
+
+/* v23.4 Aircraft Selection + Air Dates */
+#modal .v234Body{
+  max-height:calc(100dvh - 150px);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:max(42px,env(safe-area-inset-bottom));
+}
+#modal .v234Body .row,#modal .v234Body .btn{
+  pointer-events:auto!important;
+  touch-action:manipulation;
+  position:relative;
+  z-index:9;
+}
+
+
+/* v23.5 Home Tap + Rich Risk + Island Command */
+#modal .v235Body{
+  max-height:calc(100dvh - 150px);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:max(42px,env(safe-area-inset-bottom));
+}
+#modal [data-home-action-235],
+#modal [data-risk-action-235],
+#modal [data-island-action-235],
+#modal .v235Body .row,
+#modal .v235Body .btn{
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+  position:relative;
+  z-index:20;
+  cursor:pointer;
+}
+
+
+/* v23.6 Home Global Tap Fix */
+#modal .v236HomeBody{
+  max-height:calc(100dvh - 150px);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:max(42px,env(safe-area-inset-bottom));
+}
+#modal [data-home-action-236],
+#modal .v236HomeBody .row,
+#modal .v236HomeBody .btn{
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+  position:relative;
+  z-index:30;
+  cursor:pointer;
+}
+
+
+/* v23.7 Training Global Tap Fix */
+#modal .v237TrainingBody{
+  max-height:calc(100dvh - 150px);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:max(42px,env(safe-area-inset-bottom));
+}
+#modal [data-training-action-237],
+#modal .v237TrainingBody .row,
+#modal .v237TrainingBody .btn{
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+  position:relative;
+  z-index:40;
+  cursor:pointer;
+}
+
+
+/* v23.8 Options Password Money Mode */
+#modal .v238Body{
+  max-height:calc(100dvh - 150px);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:max(42px,env(safe-area-inset-bottom));
+}
+#modal .v238Body .input{
+  width:100%;
+  box-sizing:border-box;
+  min-height:54px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  background:#14171d;
+  color:#eef3ff;
+  font-size:20px;
+  padding:10px 12px;
+  margin:8px 0 12px 0;
+}
+#passwordModeBtn238{margin-top:8px;}
