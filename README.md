@@ -744,3 +744,50 @@ Deze versie scheidt werk logisch:
 - Jaarlijkse verwerking met maandkosten x12 via `processCleanerYear228()`.
 - Huisdetail krijgt ook directe rows naar thuis activiteiten en schoonmaker.
 - Debug helper: `homeCleanerDebug228()`.
+
+## v22.9 Combat Execution + Investment Shares + Adult Intimacy
+- Combat hard gefixt:
+  - Sport & Combat hub lekt geen oude kapotte amateur/semi/pro route rows meer.
+  - Training/tryout/fight acties tonen direct resultaat.
+  - Als je amateur/semi/pro bent, wordt Fight Mode correct unlocked.
+  - Oude combat functies redirecten naar `combatHub229()`.
+- Investeringen verbeterd:
+  - Je kunt nu aandelen typen.
+  - Je kunt ook een eurobedrag typen.
+  - Zelfde investeringstype telt bij elkaar op, dus meerdere vastgoed/crypto aankopen worden één positie.
+  - Vastgoed, crypto, indexfonds enz. bewegen jaarlijks duidelijk omhoog/omlaag met marktlog.
+  - Debug/helper: `debugV229()`.
+- Adult intimacy systeem:
+  - 18+ only.
+  - geïntegreerd via partner, vrienden, volwassen klasgenoten en dates.
+  - geen losse tab.
+  - consenting/FWB/samen nacht non-graphic.
+  - mogelijke relatie-effecten, zwangerschap en kleine health-check events.
+
+## v23.0 Aviation + Private Island Assets
+- Assets scherm krijgt zichtbare sectie: Luchtvaart & Privé-eiland.
+- Vliegbrevet: theorie, vlieglessen/uren, praktijkexamen.
+- Vliegtuigen kopen/beheren: Cessna 172, Piper PA-28, Cirrus SR22, King Air 350, Pilatus PC-12, Citation M2, Phenom 300, Gulfstream G650.
+- Vliegtuigbeheer: privévlucht, onderhoud, charter/verhuur, verkopen, jaarlijkse kosten/inkomsten.
+- Privé-eiland kopen voor €100.000.000.
+- Eilandbeheer: villa/mansion, haven, landingsbaan, powergrid, waterzuivering, winkels, resort, kliniek, security, school/community center.
+- Eilandbeleid: immigratie, belasting, alcoholregels, milieubeleid, securitybeleid.
+- Jaarlijkse eilandupdate met inkomsten, kosten, bevolking, stabiliteit en waarde.
+- Debug helper: `debugAviationIsland230()`.
+
+## v23.1 Business Growth Uncap Fix
+- Business jaarwinst heeft geen hard plafond meer rond ±€2,8 miljoen.
+- Jaaromzet schaalt nu met:
+  - businesswaarde/capitaal
+  - level
+  - personeel
+  - reputatie
+  - marketing
+  - kwaliteit
+  - economische marktfactor
+- Grotere bedrijven kunnen veel meer verdienen, maar krijgen ook grotere kosten, belasting/admin, personeel, risico en stress.
+- Tech startup type wordt herkend uit `tech_startup`, `startup` of naam met “Tech startup”.
+- Nieuwe business acties in dashboard:
+  - Schaal investeren
+  - Grote uitbreiding
+- Debug helper: `businessGrowthDebug231()`.

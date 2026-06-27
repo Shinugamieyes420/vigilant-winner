@@ -1066,3 +1066,28 @@ main{
   padding:10px 12px;
   margin:8px 0 12px 0;
 }
+
+
+/* v22.9 Combat/Investments/Intimacy Fix */
+#modal .v229Body{max-height:calc(100dvh - 150px);overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:max(36px,env(safe-area-inset-bottom));}
+#modal .v229Body .row,#modal .v229Body .btn{pointer-events:auto!important;touch-action:manipulation;position:relative;z-index:9;}
+#modal input.input{
+  width:100%;
+  box-sizing:border-box;
+  min-height:52px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  background:#14171d;
+  color:#eef3ff;
+  font-size:20px;
+  padding:10px 12px;
+  margin:8px 0 12px 0;
+}
+
+
+/* v23.0 Aviation + Private Island Assets */
+#modal .v230Body{max-height:calc(100dvh - 150px);overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:max(36px,env(safe-area-inset-bottom));}
+#modal .v230Body .row,#modal .v230Body .btn{pointer-events:auto!important;touch-action:manipulation;position:relative;z-index:9;}
+
+/* v23.1 Business Growth Uncap Fix */
+#modal .v231Body{max-height:calc(100dvh - 150px);overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:max(36px,env(safe-area-inset-bottom));}
