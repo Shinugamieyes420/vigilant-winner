@@ -594,3 +594,108 @@ Deze versie scheidt werk logisch:
 - Debug helpers:
   - `travelGenderDebug221()`
   - `fixGenderSprites221()`
+
+## v22.2 Assets Emoji Item Icon Guard
+- Fix voor Assets scherm waar items als baby/person sprites werden getoond.
+- Oorzaak: eerdere brede sprite patches behandelden objecten met `name` soms als persoon, waardoor state.items ook PNG hoofdjes kregen.
+- Items/assets gebruiken nu weer gewone emoji's:
+  - Fiets → 🚲
+  - gaming pc → 🖥️
+  - fitness set → 🏋️
+  - Beach outfit → 👕
+  - Signed UFC glove → 🥊
+  - Joint/jonko → 🚬
+- Personen blijven PNG sprites gebruiken.
+- `itemIcon()` is overschreven naar emoji-only.
+- `state.items` wordt bij render/save gerepareerd.
+- Assets DOM wordt na render opgeschoond.
+- Debug helper: `assetsEmojiDebug222()`.
+
+## v22.3 Housing Upgrade + Kids Sports Fix
+- Huis kopen/huren robuust opnieuw gepatcht:
+  - huren werkt vanaf 18
+  - kopen met hypotheek werkt met stabiel inkomen
+  - cash kopen werkt als je genoeg geld hebt, zonder hypotheekcheck
+  - duidelijke keuze-popup per koopwoning
+- Asset house screen uitgebreid:
+  - comfort
+  - kwaliteit
+  - staat/condition
+  - beveiliging
+  - energiezuinigheid
+  - kamers
+  - hoofdwoning instellen
+  - verhuren/stop verhuur
+  - verkopen
+- Woning upgrades:
+  - onderhoud/reparatie
+  - meubels/inrichting
+  - keuken/badkamer
+  - tuin/balkon
+  - beveiliging
+  - energiezuinig maken
+  - uitbouw/extra kamer
+- Kinder sport vanaf 6 jaar:
+  - voetbal
+  - karate
+  - tennis
+  - honkbal
+- Kinder sport is geïntegreerd in Sport/Gezondheid en Activities, in originele BitzLife stijl.
+- Debug helper: `housingSportsDebug223()`.
+
+## v22.4 Football Club + Salary Sync
+- Voetbal salaris is nu jaarsalaris/jaarvergoeding, niet per wedstrijd.
+- `footballMatch()` geeft geen basissalaris meer uit.
+- Semi-pro/pro/topcontracten syncen met `state.job` als bruto jaarsalaris.
+- Amateur/street vergoedingen worden jaarlijks verwerkt als vergoeding, niet per match.
+- Transfers en progressie kiezen alleen uit de in-game club lijsten.
+- Ongeldige fallback clubs zoals `Pro Football Club` worden gerepareerd naar echte game clubs.
+- Contract scherm toont duidelijk:
+  - club
+  - niveau
+  - contracttype
+  - jaarsalaris
+  - per wedstrijd: €0 basissalaris
+  - economy/job sync
+- Debug helper: `footballClubSalaryDebug224()`.
+
+## v22.5 Football Club Region Fix
+- Arsenal verwijderd: Engeland zit niet als route/land in deze game.
+- Borussia Dortmund verwijderd: Duitsland zit niet als route/land in deze game.
+- Transfers laden nu alleen clubs uit landen/routes die in de game zitten:
+  - Nederland/Amsterdam basis
+  - Spanje
+  - USA
+  - Japan
+  - Jamaica
+  - Night City
+- Topclub lijst is teruggebracht naar geldige game-clubs, vooral Nederlandse topclubs + eventueel game-route clubs.
+- Bestaande saves met Arsenal/Dortmund/Pro Football Club worden automatisch gerepareerd.
+- Debug helper: `footballRegionDebug225()`.
+
+## v22.6 Combat Original Style + Tryout + Fight Mode Fix
+- Fight mode UI teruggezet naar originele BitzLife row/modal stijl.
+- Kapotte custom combat rows vervangen door standaard `row()` en `.btn` onclicks.
+- Twee complete routes:
+  - MMA / UFC
+  - GLORY Kickboxing
+- Try-out systeem:
+  - discipline 50% + combat 60% = gegarandeerd aangenomen
+  - onder die grens werkt kansberekening met combat, discipline, fitness, stamina, health, form en coach trust
+- Nieuwe complete Fight Mode:
+  - 3 rondes
+  - per ronde klikbare tactische keuze
+  - HP, punten, KO/TKO/submission/decision
+  - blessurerisico en herstel werken mee
+- Combat systems gesynchroniseerd:
+  - `state.combat226`
+  - `state.combatSports`
+  - `state.fightCareer`
+- Oude combat/fight functies redirecten naar het nieuwe systeem:
+  - `combatSportsHub184()`
+  - `fightCareerScreen()`
+  - `gloryUfcCareerScreen()`
+  - `combatCareerHub177()`
+  - `fightMatch118()`
+  - `fightRecoveryScreen183()`
+- Debug helper: `combatDebug226()`.

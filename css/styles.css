@@ -1003,3 +1003,16 @@ main{
 
 /* v22.1 Travel activities + return home + gender sprite fix */
 .travel221Note{color:#b9c2d4;font-size:14px}
+
+
+/* v22.2 Assets emoji item icon guard */
+.assetsEmoji222{font-size:32px;display:inline-block}
+
+
+/* v22.3 Housing Upgrade + Kids Sports */
+.houseMeter223{height:8px;background:#303846;border-radius:999px;overflow:hidden}
+.houseMeter223 > div{height:100%;background:#22c55e}
+
+
+/* v22.6 Combat Original Style Fix */
+.combat226Note{color:#b9c2d4;font-size:14px}
